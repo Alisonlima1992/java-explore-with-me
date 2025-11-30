@@ -1,9 +1,9 @@
-package ru.practicum.statsdto;
+package stc.main.java.ru.practicum.ewm.model;
 
 import lombok.*;
 
-import jakarta.persistence.*;
-import java.time.LocalDateTime;
+        import jakarta.persistence.*;
+        import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "hits")
@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EndpointHit {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -1,20 +1,35 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/stats_db
+    username: postgres
+    password: your_password
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 300000
+      max-lifetime: 1200000
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+
+  application:
+    name: stats-service
+
 server:
   port: 9090
 
-spring:
-  main:
-    web-application-type: servlet
-
 logging:
   level:
-    ru.practicum.statsserver: INFO
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-  endpoint:
-    health:
-      show-details: always
-      enabled: true
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

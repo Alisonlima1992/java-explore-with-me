@@ -1,14 +1,15 @@
-package stc.main.java.ru.practicum.statsserver.controller;
+package stc.main.java.ru.practicum.ewm.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import stc.main.java.ru.practicum.statsserver.service.StatsService;
-import ru.practicum.statsdto.EndpointHit;
-import ru.practicum.statsdto.ViewStats;
+import stc.main.java.ru.practicum.ewm.service.StatsService;
+import ru.practicum.ewm.dto.EndpointHitDto;
+import ru.practicum.ewm.dto.ViewStats;
 
+import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -21,10 +22,14 @@ public class StatsController {
 
     @PostMapping("/hit")
     @ResponseStatus(HttpStatus.CREATED)
-    public EndpointHit saveHit(@RequestBody EndpointHit hit) {
+    public EndpointHitDto saveHit(@Valid @RequestBody EndpointHitDto hitDto) {
         log.info("Received hit: app={}, uri={}, ip={}, timestamp={}",
-                hit.getApp(), hit.getUri(), hit.getIp(), hit.getTimestamp());
-        return statsService.saveHit(hit);
+                hitDto.getApp(), hitDto.getUri(), hitDto.getIp(), hitDto.getTimestamp());
+
+        EndpointHitDto savedHit = statsService.saveHit(hitDto);
+
+        log.info("Hit successfully saved with id: {}", savedHit.getId());
+        return savedHit;
     }
 
     @GetMapping("/stats")

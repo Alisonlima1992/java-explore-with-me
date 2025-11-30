@@ -1,11 +1,11 @@
-package ru.practicum.statsclient;
+package ru.practicum.ewm.client;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
-import ru.practicum.statsdto.EndpointHit;
-import ru.practicum.statsdto.ViewStats;
+import ru.practicum.ewm.dto.EndpointHit;
+import ru.practicum.ewm.dto.ViewStats;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
