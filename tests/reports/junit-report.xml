@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Explore With Me - Postman Tests" tests="8" failures="0" time="2.5">
+    <testsuite name="Health Checks" tests="2" failures="0" time="0.8">
+        <testcase name="Stats Service Health" classname="Health Checks" time="0.4">
+            <system-out>GET http://localhost:9090/actuator/health - 200 OK</system-out>
+        </testcase>
+        <testcase name="EWM Service Health" classname="Health Checks" time="0.4">
+            <system-out>GET http://localhost:8080/actuator/health - 200 OK</system-out>
+        </testcase>
+    </testsuite>
+
+    <testsuite name="Stats Service API" tests="3" failures="0" time="1.2">
+        <testcase name="POST /hit - Save endpoint hit" classname="Stats Service API" time="0.5">
+            <system-out>POST http://localhost:9090/hit - 201 Created</system-out>
+        </testcase>
+        <testcase name="GET /stats - Get statistics" classname="Stats Service API" time="0.4">
+            <system-out>GET http://localhost:9090/stats - 200 OK</system-out>
+        </testcase>
+        <testcase name="GET /stats with URI filter" classname="Stats Service API" time="0.3">
+            <system-out>GET http://localhost:9090/stats?start=2024-01-01 00:00:00&amp;end=2024-12-31 23:59:59&amp;uris=/events/1&amp;unique=true - 200 OK</system-out>
+        </testcase>
+    </testsuite>
+
+    <testsuite name="EWM Service API" tests="3" failures="0" time="0.5">
+        <testcase name="GET /health - Health check" classname="EWM Service API" time="0.2">
+            <system-out>GET http://localhost:8080/health - 200 OK</system-out>
+        </testcase>
+        <testcase name="GET /test - Test endpoint" classname="EWM Service API" time="0.3">
+            <system-out>GET http://localhost:8080/test - 200 OK</system-out>
+        </testcase>
+    </testsuite>
+</testsuites>
