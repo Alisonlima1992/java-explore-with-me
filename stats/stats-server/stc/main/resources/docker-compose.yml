@@ -1,0 +1,40 @@
+version: '3.8'
+services:
+  postgres-ewm-stats:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: stats_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_stats_data:/var/lib/postgresql/data
+    networks:
+      - ewm-network
+
+  ewm-stats-server:
+    build: ./stats/stats-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-ewm-stats:5432/stats_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      SERVER_PORT: 9090
+    ports:
+      - "9090:9090"
+    depends_on:
+      - postgres-ewm-stats
+    networks:
+      - ewm-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_stats_data:
+
+networks:
+  ewm-network:
+    driver: bridge
