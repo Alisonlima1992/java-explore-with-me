@@ -1,14 +1,17 @@
+version: '3.8'
 services:
   stats-server:
+    build: ./stats/stats-server
+    container_name: stats-service
     ports:
       - "9090:9090"
-
-  stats-db:
-    image: postgres:16.1
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
 
   ewm-service:
+    build: ./ewm-service
+    container_name: ewm-service
     ports:
       - "8080:8080"
-
-  ewm-db:
-    image: postgres:16.1
+    depends_on:
+      - stats-server

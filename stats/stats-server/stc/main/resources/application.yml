@@ -1,0 +1,20 @@
+server:
+  port: 9090
+
+spring:
+  main:
+    web-application-type: servlet
+
+logging:
+  level:
+    stc.main.java.ru.practicum: INFO
+    org.springframework.web: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

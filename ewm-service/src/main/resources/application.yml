@@ -1,0 +1,23 @@
+server:
+  port: 8080
+
+spring:
+  main:
+    web-application-type: servlet
+
+stats-server:
+  url: http://localhost:9090
+
+logging:
+  level:
+    ru.practicum.ewm: INFO
+    org.springframework.web: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
