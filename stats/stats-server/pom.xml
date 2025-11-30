@@ -83,9 +83,6 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>stc.main.java.ru.practicum.statsserver.StatsServerApplication</mainClass>
-                </configuration>
                 <executions>
                     <execution>
                         <goals>
