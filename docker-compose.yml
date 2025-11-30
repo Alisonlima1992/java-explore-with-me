@@ -5,6 +5,12 @@ services:
     container_name: stats-service
     ports:
       - "9090:9090"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     environment:
       - SPRING_PROFILES_ACTIVE=docker
 
@@ -13,5 +19,14 @@ services:
     container_name: ewm-service
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
     depends_on:
-      - stats-server
+      stats-server:
+        condition: service_healthy

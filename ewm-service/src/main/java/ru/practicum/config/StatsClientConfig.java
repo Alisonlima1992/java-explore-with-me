@@ -8,7 +8,7 @@ import ru.practicum.statsclient.StatsClient;
 @Configuration
 public class StatsClientConfig {
 
-    @Value("${stats-server.url:http://stats-server:9090}")
+    @Value("${stats-server.url:http://stats-service:9090}")
     private String statsServerUrl;
 
     @Bean

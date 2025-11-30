@@ -6,12 +6,11 @@ spring:
     web-application-type: servlet
 
 stats-server:
-  url: http://localhost:9090
+  url: http://stats-service:9090
 
 logging:
   level:
     ru.practicum.ewm: INFO
-    org.springframework.web: INFO
 
 management:
   endpoints:
@@ -21,3 +20,4 @@ management:
   endpoint:
     health:
       show-details: always
+      enabled: true
