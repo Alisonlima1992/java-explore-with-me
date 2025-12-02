@@ -1,62 +1,32 @@
 services:
-  stats-db:
-    image: postgres:16.1
-    container_name: postgres-ewm-stats
-    environment:
-      POSTGRES_DB: stats_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-    ports:
-      - "6541:5432"
-    volumes:
-      - postgres_stats_data:/var/lib/postgresql/data
-    networks:
-      - ewm-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  ewm-stats-server:
-    build: ./stats/stats-server
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://stats-db:5432/stats_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: password
-      SERVER_PORT: 9090
+  stats-server:
+    build:
+      context: ./stats/stats-server
+      dockerfile: Dockerfile
+    image: stats-server-image
+    container_name: ewm-stats-server
     ports:
       - "9090:9090"
     depends_on:
-      stats-db:
-        condition: service_healthy
-    networks:
-      - ewm-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9090/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  ewm-service:
-    build: ./ewm-service
+      - stats-db
     environment:
-      SERVER_PORT: 8080
-    ports:
-      - "8081:8080"
-    depends_on:
-      ewm-stats-server:
-        condition: service_healthy
-    networks:
-      - ewm-network
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-volumes:
-  postgres_stats_data:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/ewm-stats
+      - SPRING_DATASOURCE_USERNAME=dbuser
+      - SPRING_DATASOURCE_PASSWORD=12345
 
-networks:
-  ewm-network:
-    driver: bridge
+  stats-db:
+    image: postgres:16.1
+    container_name: postgres-ewm-stats
+    ports:
+      - "6541:5432"
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=ewm-stats
+      - POSTGRES_USER=dbuser
+      - POSTGRES_PASSWORD=12345
+    healthcheck:
+      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+      timeout: 5s
+      interval: 5s
+      retries: 10

@@ -1,33 +1,37 @@
 package ru.practicum.ewm.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class EndpointHitDto {
 
     private Long id;
 
-    @NotBlank(message = "App cannot be blank")
+    @NotBlank
+    @JsonProperty("app")
     private String app;
 
-    @NotBlank(message = "URI cannot be blank")
+    @NotBlank
+    @JsonProperty("uri")
     private String uri;
 
-    @NotBlank(message = "IP cannot be blank")
+    @NotBlank
+    @JsonProperty("ip")
     private String ip;
 
-    @NotNull(message = "Timestamp cannot be null")
+    @NotNull
+    @Past
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime timestamp;
 }
