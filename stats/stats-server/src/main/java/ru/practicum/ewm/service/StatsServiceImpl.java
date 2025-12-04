@@ -30,8 +30,8 @@ public class StatsServiceImpl implements StatsService {
     @Override
     public List<ViewStatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, Boolean unique) {
 
-        if (start.isAfter(end) || start.isAfter(LocalDateTime.now())) {
-            throw new IllegalArgumentException("Указана некорректная дата");
+        if (start.isAfter(end)) {
+            throw new IllegalArgumentException("Start date cannot be after end date");
         }
 
         if (unique) {
@@ -42,12 +42,20 @@ public class StatsServiceImpl implements StatsService {
     }
 
     private List<ViewStatsDto> findUniqueIpStats(LocalDateTime start, LocalDateTime end, List<String> uris) {
+        if (uris != null && uris.isEmpty()) {
+            uris = null;
+        }
+
         return uris == null
                 ? statsRepository.getStatsWithUniqueIp(start, end)
                 : statsRepository.getStatsByUrisWithUniqueIp(start, end, uris);
     }
 
     private List<ViewStatsDto> findNonUniqueIpStats(LocalDateTime start, LocalDateTime end, List<String> uris) {
+        if (uris != null && uris.isEmpty()) {
+            uris = null;
+        }
+
         return uris == null
                 ? statsRepository.getStats(start, end)
                 : statsRepository.getStatsByUris(start, end, uris);
