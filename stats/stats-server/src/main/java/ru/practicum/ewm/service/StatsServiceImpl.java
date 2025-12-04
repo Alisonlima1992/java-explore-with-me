@@ -42,12 +42,20 @@ public class StatsServiceImpl implements StatsService {
     }
 
     private List<ViewStatsDto> findUniqueIpStats(LocalDateTime start, LocalDateTime end, List<String> uris) {
+        if (uris != null && uris.isEmpty()) {
+            uris = null;
+        }
+
         return uris == null
                 ? statsRepository.getStatsWithUniqueIp(start, end)
                 : statsRepository.getStatsByUrisWithUniqueIp(start, end, uris);
     }
 
     private List<ViewStatsDto> findNonUniqueIpStats(LocalDateTime start, LocalDateTime end, List<String> uris) {
+        if (uris != null && uris.isEmpty()) {
+            uris = null;
+        }
+
         return uris == null
                 ? statsRepository.getStats(start, end)
                 : statsRepository.getStatsByUris(start, end, uris);
