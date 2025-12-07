@@ -1,4 +1,19 @@
 services:
+  stats-db:
+    image: postgres:16.1
+    container_name: postgres-ewm-stats
+    ports:
+      - "6541:5432"
+    environment:
+      - POSTGRES_DB=ewm-stats
+      - POSTGRES_USER=dbuser
+      - POSTGRES_PASSWORD=12345
+    healthcheck:
+      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+      timeout: 5s
+      interval: 5s
+      retries: 10
+
   stats-server:
     build:
       context: ./stats/stats-server
@@ -21,13 +36,13 @@ services:
       timeout: 5s
       retries: 5
 
-  stats-db:
+  main-db:
     image: postgres:16.1
-    container_name: postgres-ewm-stats
+    container_name: postgres-ewm-main
     ports:
-      - "6541:5432"
+      - "6542:5432"
     environment:
-      - POSTGRES_DB=ewm-stats
+      - POSTGRES_DB=ewm-main
       - POSTGRES_USER=dbuser
       - POSTGRES_PASSWORD=12345
     healthcheck:
