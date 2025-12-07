@@ -6,8 +6,6 @@ import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.dto.event.NewEventDto;
 import ru.practicum.model.Event;
 
-import java.time.LocalDateTime;
-
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
         uses = {CategoryMapper.class, UserMapper.class})
 public interface EventMapper {

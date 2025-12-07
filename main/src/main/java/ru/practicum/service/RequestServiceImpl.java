@@ -169,7 +169,7 @@ public class RequestServiceImpl implements RequestService {
 
                 event.setConfirmedRequests(confirmedRequests);
                 eventRepository.save(event);
-            } else if (newStatus == RequestStatus.REJECTED){
+            } else if (newStatus == RequestStatus.REJECTED) {
                 request.setStatus(RequestStatus.REJECTED);
             }
         }
