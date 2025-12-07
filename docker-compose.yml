@@ -1,67 +1,64 @@
 services:
+  stats-server:
+    build:
+      context: ./stats/stats-server
+      dockerfile: Dockerfile
+    image: stats-server-image
+    container_name: ewm-stats-server
+    ports:
+      - "9090:9090"
+    depends_on:
+      - stats-db
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/ewm-stats
+      - SPRING_DATASOURCE_USERNAME=dbuser
+      - SPRING_DATASOURCE_PASSWORD=12345
+
   stats-db:
     image: postgres:16.1
     container_name: postgres-ewm-stats
+    ports:
+      - "6541:5432"
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql/data/
     environment:
       - POSTGRES_DB=ewm-stats
       - POSTGRES_USER=dbuser
       - POSTGRES_PASSWORD=12345
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dbuser -d ewm-stats"]
-      interval: 10s
+      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
       timeout: 5s
-      retries: 5
-
-  stats-server:
-    build:
-      context: ./stats/stats-server
-      dockerfile: Dockerfile
-    container_name: ewm-stats-server
-    depends_on:
-      stats-db:
-        condition: service_healthy
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/ewm-stats
-      - SPRING_DATASOURCE_USERNAME=dbuser
-      - SPRING_DATASOURCE_PASSWORD=12345
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9090/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      interval: 5s
+      retries: 10
 
   main-db:
     image: postgres:16.1
     container_name: postgres-ewm-main
+    ports:
+      - "6542:5432"
     environment:
       - POSTGRES_DB=ewm-main
       - POSTGRES_USER=dbuser
       - POSTGRES_PASSWORD=12345
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dbuser -d ewm-main"]
-      interval: 10s
+      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
       timeout: 5s
-      retries: 5
+      interval: 5s
+      retries: 10
 
   main:
     build:
       context: ./main
       dockerfile: Dockerfile
+    image: main-image
     container_name: ewm-main
     ports:
       - "8080:8080"
     depends_on:
-      main-db:
-        condition: service_healthy
-      stats-server:
-        condition: service_healthy
+      - main-db
+      - stats-server
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://main-db:5432/ewm-main
       - SPRING_DATASOURCE_USERNAME=dbuser
       - SPRING_DATASOURCE_PASSWORD=12345
       - EWM_STATS_SERVICE_URL=http://stats-server:9090
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
