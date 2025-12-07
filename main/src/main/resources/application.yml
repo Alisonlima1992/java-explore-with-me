@@ -1,51 +1,27 @@
-spring:
-  application:
-    name: main-service
-
-  datasource:
-    driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://main-db:5432/ewm-main
-    username: dbuser
-    password: 12345
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-        jdbc:
-          batch_size: 20
-        order_inserts: true
-        order_updates: true
-    show-sql: false
-
-  jackson:
-    serialization:
-      write-dates-as-timestamps: false
-    date-format: yyyy-MM-dd HH:mm:ss
-
 server:
   port: 8080
-  servlet:
-    context-path: /
 
-ewm:
-  stats-service:
-    url: http://stats-server:9090
+spring:
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+  sql:
+    init:
+      mode: always
+  datasource:
+    driverClassName: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:6542/ewm-main
+    username: dbuser
+    password: 12345
 
 logging:
   level:
-    ru.practicum: INFO
-    org.springframework.web: INFO
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type: TRACE
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: logs/main-service.log
+    ru.practicum: DEBUG
+
+ewm:
+  stats-service:
+    url: http://localhost:9090
