@@ -31,8 +31,16 @@ public interface EventMapper {
     Event toEntity(NewEventDto newEventDto);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "initiator", ignore = true)
+    @Mapping(target = "state", ignore = true)
+    @Mapping(target = "createdOn", ignore = true)
+    @Mapping(target = "publishedOn", ignore = true)
+    @Mapping(target = "confirmedRequests", ignore = true)
+    @Mapping(target = "views", ignore = true)
+    @Mapping(target = "locationLat", ignore = true)
+    @Mapping(target = "locationLon", ignore = true)
     void updateEventFromDto(NewEventDto dto, @MappingTarget Event entity);
 
     default EventFullDto.LocationDto mapToLocationDto(Event event) {

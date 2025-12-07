@@ -37,8 +37,13 @@ public class NewEventDto {
     @NotNull(message = "Локация обязательна")
     private LocationDto location;
 
+    @Builder.Default
     private Boolean paid = false;
+
+    @Builder.Default
     private Integer participantLimit = 0;
+
+    @Builder.Default
     private Boolean requestModeration = true;
 
     @Getter
