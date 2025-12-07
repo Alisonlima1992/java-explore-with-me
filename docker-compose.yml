@@ -2,26 +2,21 @@ services:
   stats-db:
     image: postgres:16.1
     container_name: postgres-ewm-stats
-    ports:
-      - "6541:5432"
     environment:
       - POSTGRES_DB=ewm-stats
       - POSTGRES_USER=dbuser
       - POSTGRES_PASSWORD=12345
     healthcheck:
-      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+      test: ["CMD-SHELL", "pg_isready -U dbuser -d ewm-stats"]
+      interval: 10s
       timeout: 5s
-      interval: 5s
-      retries: 10
+      retries: 5
 
   stats-server:
     build:
       context: ./stats/stats-server
       dockerfile: Dockerfile
-    image: stats-server-image
     container_name: ewm-stats-server
-    ports:
-      - "9090:9090"
     depends_on:
       stats-db:
         condition: service_healthy
@@ -29,33 +24,29 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/ewm-stats
       - SPRING_DATASOURCE_USERNAME=dbuser
       - SPRING_DATASOURCE_PASSWORD=12345
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
     healthcheck:
-      test: wget --no-verbose --tries=1 --spider http://localhost:9090/actuator/health || exit 1
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "curl", "-f", "http://localhost:9090/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   main-db:
     image: postgres:16.1
     container_name: postgres-ewm-main
-    ports:
-      - "6542:5432"
     environment:
       - POSTGRES_DB=ewm-main
       - POSTGRES_USER=dbuser
       - POSTGRES_PASSWORD=12345
     healthcheck:
-      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+      test: ["CMD-SHELL", "pg_isready -U dbuser -d ewm-main"]
+      interval: 10s
       timeout: 5s
-      interval: 5s
-      retries: 10
+      retries: 5
 
   main:
     build:
       context: ./main
       dockerfile: Dockerfile
-    image: main-image
     container_name: ewm-main
     ports:
       - "8080:8080"
@@ -68,10 +59,9 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://main-db:5432/ewm-main
       - SPRING_DATASOURCE_USERNAME=dbuser
       - SPRING_DATASOURCE_PASSWORD=12345
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - EWM_STATS_SERVICE_URL=http://stats-server:9090
     healthcheck:
-      test: wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
