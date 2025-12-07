@@ -2,21 +2,22 @@ server:
   port: 8080
 
 spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:6542/ewm-main}
+    username: ${SPRING_DATASOURCE_USERNAME:dbuser}
+    password: ${SPRING_DATASOURCE_PASSWORD:12345}
+    driver-class-name: org.postgresql.Driver
+
   jpa:
+    hibernate:
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-    hibernate:
-      ddl-auto: update
+
   sql:
     init:
-      mode: always
-  datasource:
-    driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:6542/ewm-main
-    username: dbuser
-    password: 12345
+      mode: never
 
 logging:
   level:
@@ -24,4 +25,4 @@ logging:
 
 ewm:
   stats-service:
-    url: http://localhost:9090
+    url: ${EWM_STATS_SERVICE_URL:http://stats-server:9090}
