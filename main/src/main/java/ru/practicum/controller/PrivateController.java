@@ -19,7 +19,6 @@ import ru.practicum.service.RequestService;
 import ru.practicum.util.Constants;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/users/{userId}")
