@@ -1,44 +1,51 @@
 services:
+  stats-db:
+    image: postgres:16.1
+    container_name: postgres-ewm-stats
+    ports:
+      - "6541:5432"
+    environment:
+      POSTGRES_DB: ewm-stats
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345
+
   stats-server:
-    build: ./stats/stats-server
-    image: stats-server-image
-    container_name: stats-server-container
+    build:
+      context: ./stats/stats-server
+      dockerfile: Dockerfile
+    container_name: ewm-stats-server
     ports:
       - "9090:9090"
     depends_on:
       - stats-db
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/ewm-stats
+      SPRING_DATASOURCE_URL: jdbc:postgresql://stats-db:5432/ewm-stats
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 12345
 
-  stats-db:
-    image: postgres:14-alpine
-    container_name: postgres-stats-db-container
-    ports:
-      - "6541:5432"
-    environment:
-      - POSTGRES_DB=ewm-stats
-      - POSTGRES_USER=stats
-      - POSTGRES_PASSWORD=stats
-
-  ewm-service:
-    build: ./main
-    image: main-image
-    container_name: main-container
-    ports:
-      - "8080:8080"
-    depends_on:
-      - ewm-db
-      - stats-server
-    environment:
-      - CLIENT_URL=http://stats-server:9090
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://ewm-db:5432/ewm-main
-
-  ewm-db:
-    image: postgres:14-alpine
-    container_name: main-db-container
+  main-db:
+    image: postgres:16.1
+    container_name: postgres-ewm-main
     ports:
       - "6542:5432"
     environment:
-      - POSTGRES_DB=ewm-main
-      - POSTGRES_USER=main
-      - POSTGRES_PASSWORD=main
+      POSTGRES_DB: ewm-main
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345
+
+  ewm-service:
+    build:
+      context: ./main
+      dockerfile: Dockerfile
+    container_name: ewm-main
+    ports:
+      - "8080:8080"
+    depends_on:
+      - main-db
+      - stats-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://main-db:5432/ewm-main
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 12345
+      EWM_STATS_SERVICE_URL: http://stats-server:9090
+      SPRING_SQL_INIT_MODE: never
