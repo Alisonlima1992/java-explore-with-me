@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.compilation.CompilationDto;
 import ru.practicum.dto.compilation.NewCompilationDto;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.exception.ValidationException;
 import ru.practicum.mapper.CompilationMapper;
 import ru.practicum.model.Compilation;
 import ru.practicum.model.Event;
@@ -58,6 +59,9 @@ public class CompilationServiceImpl implements CompilationService {
                 .orElseThrow(() -> new NotFoundException("Подборка", compilationId));
 
         if (updateCompilationDto.getTitle() != null && !updateCompilationDto.getTitle().isBlank()) {
+            if (updateCompilationDto.getTitle().length() < 1 || updateCompilationDto.getTitle().length() > 50) {
+                throw new ValidationException("Заголовок должен быть от 1 до 50 символов");
+            }
             compilation.setTitle(updateCompilationDto.getTitle());
         }
 
