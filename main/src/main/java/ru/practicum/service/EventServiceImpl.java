@@ -251,6 +251,13 @@ public class EventServiceImpl implements EventService {
         statsIntegrationService.saveHit("/events/" + eventId, "127.0.0.1");
 
         Long views = statsIntegrationService.getViews("/events/" + eventId);
+
+        if (views == null || views == 0) {
+            views = 1L;
+        } else {
+            views = views + 1;
+        }
+
         event.setViews(views);
 
         Integer confirmedRequests = requestRepository.countConfirmedRequestsByEventId(eventId);
