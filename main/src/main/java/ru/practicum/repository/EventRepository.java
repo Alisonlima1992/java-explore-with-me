@@ -26,9 +26,9 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     Long countByCategoryId(@Param("categoryId") Long categoryId);
 
     @Query("SELECT e FROM Event e " +
-            "WHERE (:users IS NULL OR :users IS EMPTY OR e.initiator.id IN (:users)) " +
-            "AND (:states IS NULL OR :states IS EMPTY OR e.state IN (:states)) " +
-            "AND (:categories IS NULL OR :categories IS EMPTY OR e.category.id IN (:categories)) " +
+            "WHERE (COALESCE(:users, NULL) IS NULL OR e.initiator.id IN (:users)) " +
+            "AND (COALESCE(:states, NULL) IS NULL OR e.state IN (:states)) " +
+            "AND (COALESCE(:categories, NULL) IS NULL OR e.category.id IN (:categories)) " +
             "AND (:rangeStart IS NULL OR e.eventDate >= :rangeStart) " +
             "AND (:rangeEnd IS NULL OR e.eventDate <= :rangeEnd)")
     Page<Event> findEventsByAdmin(
