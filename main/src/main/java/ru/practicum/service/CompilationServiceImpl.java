@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.compilation.CompilationDto;
 import ru.practicum.dto.compilation.NewCompilationDto;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.exception.ValidationException;
 import ru.practicum.mapper.CompilationMapper;
 import ru.practicum.model.Compilation;
 import ru.practicum.model.Event;
@@ -36,6 +37,14 @@ public class CompilationServiceImpl implements CompilationService {
     public CompilationDto createCompilation(NewCompilationDto newCompilationDto) {
         log.info("Creating compilation with title: {}", newCompilationDto.getTitle());
 
+        if (newCompilationDto.getTitle() == null || newCompilationDto.getTitle().isBlank()) {
+            throw new ValidationException("Заголовок не может быть пустым");
+        }
+
+        if (newCompilationDto.getTitle().length() < 1 || newCompilationDto.getTitle().length() > 50) {
+            throw new ValidationException("Заголовок должен быть от 1 до 50 символов");
+        }
+
         Compilation compilation = compilationMapper.toEntity(newCompilationDto);
 
         if (newCompilationDto.getEvents() != null && !newCompilationDto.getEvents().isEmpty()) {
@@ -57,7 +66,13 @@ public class CompilationServiceImpl implements CompilationService {
         Compilation compilation = compilationRepository.findById(compilationId)
                 .orElseThrow(() -> new NotFoundException("Подборка", compilationId));
 
-        if (updateCompilationDto.getTitle() != null && !updateCompilationDto.getTitle().isBlank()) {
+        if (updateCompilationDto.getTitle() != null) {
+            if (updateCompilationDto.getTitle().isBlank()) {
+                throw new ValidationException("Заголовок не может быть пустым");
+            }
+            if (updateCompilationDto.getTitle().length() < 1 || updateCompilationDto.getTitle().length() > 50) {
+                throw new ValidationException("Заголовок должен быть от 1 до 50 символов");
+            }
             compilation.setTitle(updateCompilationDto.getTitle());
         }
 
