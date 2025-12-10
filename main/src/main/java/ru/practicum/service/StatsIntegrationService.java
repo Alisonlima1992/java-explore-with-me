@@ -9,7 +9,6 @@ import ru.practicum.ewm.dto.ViewStatsDto;
 import ru.practicum.util.Constants;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -32,7 +31,7 @@ public class StatsIntegrationService {
             statsClient.postHit(hitDto);
             log.debug("Hit saved for uri: {}, ip: {}", uri, ip);
         } catch (Exception e) {
-            log.error("Failed to save hit for uri: {}, ip: {}. Error: {}", uri, ip, e.getMessage(), e);
+            log.error("Failed to save hit for uri: {}, ip: {}. Error: {}", uri, ip, e.getMessage());
         }
     }
 
@@ -45,28 +44,15 @@ public class StatsIntegrationService {
                     start, end, List.of(uri), true
             );
 
-            if (stats == null || stats.isEmpty()) {
-                return 0L;
-            }
-
-            return stats.stream()
-                    .filter(s -> uri.equals(s.getUri()))
-                    .map(ViewStatsDto::getHits)
-                    .findFirst()
-                    .orElse(0L);
-
+            return stats.isEmpty() ? 0L : stats.get(0).getHits();
         } catch (Exception e) {
-            log.error("Failed to get views for uri: {}. Error: {}", uri, e.getMessage(), e);
+            log.error("Failed to get views for uri: {}. Error: {}", uri, e.getMessage());
             return 0L;
         }
     }
 
     public Map<String, Long> getViewsForUris(List<String> uris) {
         try {
-            if (uris == null || uris.isEmpty()) {
-                return new HashMap<>();
-            }
-
             LocalDateTime start = LocalDateTime.now().minusYears(1);
             LocalDateTime end = LocalDateTime.now();
 
@@ -74,27 +60,11 @@ public class StatsIntegrationService {
                     start, end, uris, true
             );
 
-            if (stats == null || stats.isEmpty()) {
-                return uris.stream()
-                        .collect(Collectors.toMap(uri -> uri, uri -> 0L));
-            }
-
-            Map<String, Long> result = new HashMap<>();
-
-            uris.forEach(uri -> result.put(uri, 0L));
-
-            stats.forEach(stat -> {
-                if (uris.contains(stat.getUri())) {
-                    result.put(stat.getUri(), stat.getHits());
-                }
-            });
-
-            return result;
-
+            return stats.stream()
+                    .collect(Collectors.toMap(ViewStatsDto::getUri, ViewStatsDto::getHits));
         } catch (Exception e) {
-            log.error("Failed to get views for uris: {}. Error: {}", uris, e.getMessage(), e);
-            return uris.stream()
-                    .collect(Collectors.toMap(uri -> uri, uri -> 0L));
+            log.error("Failed to get views for uris: {}. Error: {}", uris, e.getMessage());
+            return Map.of();
         }
     }
 }

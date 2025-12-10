@@ -50,10 +50,6 @@ public class EventServiceImpl implements EventService {
             throw new ValidationException("Дата события должна быть не ранее чем через 2 часа от текущего момента");
         }
 
-        if (newEventDto.getParticipantLimit() != null && newEventDto.getParticipantLimit() < 0) {
-            throw new ValidationException("Лимит участников не может быть отрицательным");
-        }
-
         Event event = eventMapper.toEntity(newEventDto);
         event.setInitiator(user);
         event.setCategory(category);
@@ -80,44 +76,16 @@ public class EventServiceImpl implements EventService {
             throw new ConflictException("Нельзя изменить опубликованное событие");
         }
 
-        if (updateEvent.getEventDate() != null) {
-            if (updateEvent.getEventDate().isBefore(LocalDateTime.now().plusHours(Constants.MIN_HOURS_BEFORE_EVENT))) {
-                throw new ValidationException("Дата события должна быть не ранее чем через 2 часа от текущего момента");
-            }
-        }
-
-
-        if (updateEvent.getParticipantLimit() != null && updateEvent.getParticipantLimit() < 0) {
-            throw new ValidationException("Лимит участников не может быть отрицательным");
-        }
-
-        if (updateEvent.getParticipantLimit() != null) {
-            int confirmedRequests = requestRepository.countConfirmedRequestsByEventId(eventId);
-            if (updateEvent.getParticipantLimit() != 0 && confirmedRequests > updateEvent.getParticipantLimit()) {
-                throw new ConflictException("Нельзя установить лимит участников меньше количества уже подтвержденных запросов");
-            }
-        }
-
         updateEventFields(event, updateEvent);
 
         if (updateEvent.getStateAction() != null) {
             switch (updateEvent.getStateAction()) {
                 case SEND_TO_REVIEW:
-                    if (event.getState() != EventState.CANCELED) {
-                        event.setState(EventState.PENDING);
-                    } else {
-                        throw new ConflictException("Нельзя отправить на модерацию отмененное событие");
-                    }
+                    event.setState(EventState.PENDING);
                     break;
                 case CANCEL_REVIEW:
-                    if (event.getState() != EventState.PUBLISHED) {
-                        event.setState(EventState.CANCELED);
-                    } else {
-                        throw new ConflictException("Нельзя отменить опубликованное событие");
-                    }
+                    event.setState(EventState.CANCELED);
                     break;
-                default:
-                    throw new ValidationException("Некорректное действие: " + updateEvent.getStateAction());
             }
         }
 
@@ -212,16 +180,7 @@ public class EventServiceImpl implements EventService {
     public List<EventShortDto> getEventsByPublic(String text, List<Long> categories, Boolean paid,
                                                  LocalDateTime rangeStart, LocalDateTime rangeEnd,
                                                  Boolean onlyAvailable, String sort, Integer from, Integer size) {
-        log.info("Getting events by public with filters: text={}, categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
-                text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
-
-        if (from < 0) {
-            throw new ValidationException("Параметр 'from' не может быть отрицательным");
-        }
-
-        if (size <= 0) {
-            throw new ValidationException("Параметр 'size' должен быть положительным числом");
-        }
+        log.info("Getting events by public with filters");
 
         if (rangeStart != null && rangeEnd != null && rangeStart.isAfter(rangeEnd)) {
             throw new ValidationException("Дата начала не может быть позже даты окончания");
@@ -231,56 +190,31 @@ public class EventServiceImpl implements EventService {
             rangeStart = LocalDateTime.now();
         }
 
-        Boolean finalOnlyAvailable = (onlyAvailable != null) ? onlyAvailable : false;
-
         Sort sorting = Sort.by("eventDate").ascending();
-        if (sort != null) {
-            if ("VIEWS".equalsIgnoreCase(sort)) {
-                sorting = Sort.by("views").descending();
-            } else if ("EVENT_DATE".equalsIgnoreCase(sort)) {
-                sorting = Sort.by("eventDate").descending();
-            }
+        if ("VIEWS".equalsIgnoreCase(sort)) {
+            sorting = Sort.by("views").descending();
         }
 
-        int page = (from > 0 && size > 0) ? from / size : 0;
-        Pageable pageable = PageRequest.of(page, size, sorting);
-
-        log.debug("Pageable created: page={}, size={}, sort={}", page, size, sorting);
+        Pageable pageable = PageRequest.of(from / size, size, sorting);
 
         List<Event> events = eventRepository.findEventsByPublic(
-                text, categories, paid, rangeStart, rangeEnd, finalOnlyAvailable, pageable
+                text, categories, paid, rangeStart, rangeEnd, onlyAvailable, pageable
         ).getContent();
 
-        log.debug("Found {} events", events.size());
-
-        if (events.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<String> uris = events.stream()
-                .map(e -> "/events/" + e.getId())
-                .collect(Collectors.toList());
-
-        log.debug("Fetching views for URIs: {}", uris);
-
-        Map<String, Long> views = statsIntegrationService.getViewsForUris(uris);
-
-        log.debug("Views map: {}", views);
+        Map<String, Long> views = statsIntegrationService.getViewsForUris(
+                events.stream()
+                        .map(e -> "/events/" + e.getId())
+                        .collect(Collectors.toList())
+        );
 
         events.forEach(event -> {
-            String eventUri = "/events/" + event.getId();
-            Long viewCount = views.getOrDefault(eventUri, 0L);
-            log.debug("Event {} has {} views", event.getId(), viewCount);
+            Long viewCount = views.getOrDefault("/events/" + event.getId(), 0L);
             event.setViews(viewCount);
         });
 
-        List<EventShortDto> result = events.stream()
+        return events.stream()
                 .map(eventMapper::toShortDto)
                 .collect(Collectors.toList());
-
-        log.debug("Returning {} events", result.size());
-
-        return result;
     }
 
     @Override
@@ -307,23 +241,14 @@ public class EventServiceImpl implements EventService {
 
     private void updateEventFields(Event event, UpdateEventRequest updateEvent) {
         if (updateEvent.getTitle() != null && !updateEvent.getTitle().isBlank()) {
-            if (updateEvent.getTitle().length() < 3 || updateEvent.getTitle().length() > 120) {
-                throw new ValidationException("Заголовок должен быть от 3 до 120 символов");
-            }
             event.setTitle(updateEvent.getTitle());
         }
 
         if (updateEvent.getAnnotation() != null && !updateEvent.getAnnotation().isBlank()) {
-            if (updateEvent.getAnnotation().length() < 20 || updateEvent.getAnnotation().length() > 2000) {
-                throw new ValidationException("Аннотация должна быть от 20 до 2000 символов");
-            }
             event.setAnnotation(updateEvent.getAnnotation());
         }
 
         if (updateEvent.getDescription() != null && !updateEvent.getDescription().isBlank()) {
-            if (updateEvent.getDescription().length() < 20 || updateEvent.getDescription().length() > 7000) {
-                throw new ValidationException("Описание должно быть от 20 до 7000 символов");
-            }
             event.setDescription(updateEvent.getDescription());
         }
 
@@ -334,13 +259,13 @@ public class EventServiceImpl implements EventService {
         }
 
         if (updateEvent.getEventDate() != null) {
+            if (updateEvent.getEventDate().isBefore(LocalDateTime.now().plusHours(Constants.MIN_HOURS_BEFORE_EVENT))) {
+                throw new ValidationException("Дата события должна быть не ранее чем через 2 часа от текущего момента");
+            }
             event.setEventDate(updateEvent.getEventDate());
         }
 
         if (updateEvent.getLocation() != null) {
-            if (updateEvent.getLocation().getLat() == null || updateEvent.getLocation().getLon() == null) {
-                throw new ValidationException("Координаты локации обязательны");
-            }
             event.setLocationLat(updateEvent.getLocation().getLat());
             event.setLocationLon(updateEvent.getLocation().getLon());
         }

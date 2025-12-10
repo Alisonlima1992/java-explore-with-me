@@ -11,7 +11,6 @@ import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.dto.event.NewEventDto;
 import ru.practicum.dto.event.UpdateEventRequest;
-import ru.practicum.dto.request.EventRequestStatusUpdateRequest;
 import ru.practicum.dto.request.ParticipationRequestDto;
 import ru.practicum.service.CommentService;
 import ru.practicum.service.EventService;
@@ -19,6 +18,7 @@ import ru.practicum.service.RequestService;
 import ru.practicum.util.Constants;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/users/{userId}")
@@ -90,19 +90,16 @@ public class PrivateController {
     }
 
     @PatchMapping("/events/{eventId}/requests")
-    public List<ParticipationRequestDto> updateRequestStatuses(
-            @PathVariable Long userId,
-            @PathVariable Long eventId,
-            @Valid @RequestBody EventRequestStatusUpdateRequest statusUpdateRequest) {
-
+    public List<ParticipationRequestDto> updateRequestStatuses(@PathVariable Long userId,
+                                                               @PathVariable Long eventId,
+                                                               @RequestBody Map<String, Object> updates) {
         log.info("PATCH /users/{}/events/{}/requests - обновление статусов запросов", userId, eventId);
 
-        return requestService.updateRequestStatuses(
-                userId,
-                eventId,
-                statusUpdateRequest.getRequestIds(),
-                statusUpdateRequest.getStatus()
-        );
+        @SuppressWarnings("unchecked")
+        List<Long> requestIds = (List<Long>) updates.get("requestIds");
+        String status = (String) updates.get("status");
+
+        return requestService.updateRequestStatuses(userId, eventId, requestIds, status);
     }
 
 
