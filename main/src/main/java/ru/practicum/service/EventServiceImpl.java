@@ -212,7 +212,11 @@ public class EventServiceImpl implements EventService {
 
         if (onlyAvailable != null && onlyAvailable) {
             events = events.stream()
-                    .filter(event -> event.getConfirmedRequests() < event.getParticipantLimit())
+                    .filter(event -> {
+                        Integer confirmed = event.getConfirmedRequests() != null ? event.getConfirmedRequests() : 0;
+                        Integer limit = event.getParticipantLimit() != null ? event.getParticipantLimit() : 0;
+                        return confirmed < limit;
+                    })
                     .collect(Collectors.toList());
         }
 
@@ -248,6 +252,9 @@ public class EventServiceImpl implements EventService {
 
         Long views = statsIntegrationService.getViews("/events/" + eventId);
         event.setViews(views);
+
+        Integer confirmedRequests = requestRepository.countConfirmedRequestsByEventId(eventId);
+        event.setConfirmedRequests(confirmedRequests);
 
         Event updatedEvent = eventRepository.save(event);
 
