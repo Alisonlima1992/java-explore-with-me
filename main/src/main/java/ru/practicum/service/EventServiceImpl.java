@@ -296,22 +296,37 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Событие", eventId);
         }
 
-        statsIntegrationService.saveHit("/events/" + eventId, "127.0.0.1");
-
-        Long views = statsIntegrationService.getViews("/events/" + eventId);
-
-        if (views == null || views == 0) {
-            views = 1L;
-        } else {
-            views = views + 1;
+        try {
+            statsIntegrationService.saveHit("/events/" + eventId, "127.0.0.1");
+            log.debug("Hit saved for event id: {}", eventId);
+        } catch (Exception e) {
+            log.error("Failed to save hit for event id {}: {}", eventId, e.getMessage());
         }
 
-        event.setViews(views);
+        Long statsViews = 0L;
+        try {
+            statsViews = statsIntegrationService.getViews("/events/" + eventId);
+            log.debug("Stats views for event id {}: {}", eventId, statsViews);
+        } catch (Exception e) {
+            log.error("Failed to get views for event id {}: {}", eventId, e.getMessage());
+        }
+
+        Long newViews;
+        if (statsViews != null && statsViews > 0) {
+            newViews = statsViews;
+        } else {
+            Long currentViews = event.getViews() != null ? event.getViews() : 0L;
+            newViews = currentViews + 1;
+        }
+
+        event.setViews(newViews);
 
         Integer confirmedRequests = requestRepository.countConfirmedRequestsByEventId(eventId);
         event.setConfirmedRequests(confirmedRequests);
 
         Event updatedEvent = eventRepository.save(event);
+
+        log.info("Event id: {} retrieved. Views updated to: {}", eventId, newViews);
 
         return eventMapper.toFullDto(updatedEvent);
     }
