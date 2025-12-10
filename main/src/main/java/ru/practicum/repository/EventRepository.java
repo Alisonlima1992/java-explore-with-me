@@ -46,7 +46,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             @Param("offset") int offset,
             @Param("limit") int limit);
 
-    // НАТИВНЫЙ запрос для публичного доступа
     @Query(value = "SELECT * FROM events e " +
             "WHERE e.state = 'PUBLISHED' " +
             "AND (:text IS NULL OR LOWER(e.annotation) LIKE LOWER(CONCAT('%', :text, '%')) " +
