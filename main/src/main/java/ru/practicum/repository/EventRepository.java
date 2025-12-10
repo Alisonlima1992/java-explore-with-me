@@ -3,6 +3,7 @@ package ru.practicum.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -67,4 +68,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     @Query("SELECT COUNT(r) FROM ParticipationRequest r WHERE r.event.id = :eventId AND r.status = 'CONFIRMED'")
     Integer countConfirmedRequests(@Param("eventId") Long eventId);
+
+    @Modifying
+    @Query("UPDATE Event e SET e.views = COALESCE(e.views, 0) + 1 WHERE e.id = :eventId")
+    void incrementViews(@Param("eventId") Long eventId);
 }

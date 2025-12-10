@@ -296,34 +296,23 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Событие", eventId);
         }
 
-        Long currentViews = event.getViews() != null ? event.getViews() : 0L;
-        Long newViews = currentViews + 1;
+        eventRepository.incrementViews(eventId);
 
-        log.debug("Increasing views for event {}: {} -> {}", eventId, currentViews, newViews);
-
-        event.setViews(newViews);
+        Event updatedEvent = eventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Событие", eventId));
 
         Integer confirmedRequests = requestRepository.countConfirmedRequestsByEventId(eventId);
-        event.setConfirmedRequests(confirmedRequests);
+        updatedEvent.setConfirmedRequests(confirmedRequests);
 
-        Event updatedEvent = eventRepository.save(event);
+        try {
+            statsIntegrationService.saveHit("/events/" + eventId, "127.0.0.1");
+        } catch (Exception e) {
+            log.warn("Failed to save hit: {}", e.getMessage());
+        }
 
-        saveHitAsync(eventId);
-
-        log.info("Event id: {} retrieved. Views: {}", eventId, newViews);
+        log.info("Event id: {} retrieved. Views should be incremented", eventId);
 
         return eventMapper.toFullDto(updatedEvent);
-    }
-
-    private void saveHitAsync(Long eventId) {
-        new Thread(() -> {
-            try {
-                statsIntegrationService.saveHit("/events/" + eventId, "127.0.0.1");
-                log.debug("Async hit saved for event id: {}", eventId);
-            } catch (Exception e) {
-                log.warn("Failed to async save hit for event id {}: {}", eventId, e.getMessage());
-            }
-        }).start();
     }
 
     private void updateEventFields(Event event, UpdateEventRequest updateEvent) {
