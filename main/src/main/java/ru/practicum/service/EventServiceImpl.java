@@ -233,7 +233,6 @@ public class EventServiceImpl implements EventService {
                     from,
                     size
             );
-            
             if (onlyAvailable != null && onlyAvailable) {
                 events = events.stream()
                         .filter(event -> {
@@ -243,7 +242,6 @@ public class EventServiceImpl implements EventService {
                         })
                         .collect(Collectors.toList());
             }
-            
             if ("VIEWS".equalsIgnoreCase(sort)) {
                 events.sort((e1, e2) -> {
                     Long views1 = e1.getViews() != null ? e1.getViews() : 0L;
@@ -251,7 +249,6 @@ public class EventServiceImpl implements EventService {
                     return views2.compareTo(views1); // по убыванию
                 });
             }
-            
             if (!events.isEmpty()) {
                 List<String> uris = events.stream()
                         .map(e -> "/events/" + e.getId())
