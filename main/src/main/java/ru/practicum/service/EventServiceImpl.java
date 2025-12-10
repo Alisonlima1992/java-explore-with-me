@@ -284,7 +284,7 @@ public class EventServiceImpl implements EventService {
                 events.sort((e1, e2) -> {
                     Long views1 = e1.getViews() != null ? e1.getViews() : 0L;
                     Long views2 = e2.getViews() != null ? e2.getViews() : 0L;
-                    return views2.compareTo(views1); // по убыванию
+                    return views2.compareTo(views1);
                 });
             }
 
