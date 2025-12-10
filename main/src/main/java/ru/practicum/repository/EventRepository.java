@@ -70,6 +70,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     Integer countConfirmedRequests(@Param("eventId") Long eventId);
 
     @Modifying
-    @Query("UPDATE Event e SET e.views = COALESCE(e.views, 0) + 1 WHERE e.id = :eventId")
+    @Query(value = "UPDATE events SET views = COALESCE(views, 0) + 1 WHERE id = :eventId", nativeQuery = true)
     void incrementViews(@Param("eventId") Long eventId);
 }
