@@ -68,8 +68,4 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     @Query("SELECT COUNT(r) FROM ParticipationRequest r WHERE r.event.id = :eventId AND r.status = 'CONFIRMED'")
     Integer countConfirmedRequests(@Param("eventId") Long eventId);
-
-    @Modifying
-    @Query(value = "UPDATE events SET views = COALESCE(views, 0) + 1 WHERE id = :eventId", nativeQuery = true)
-    void incrementViews(@Param("eventId") Long eventId);
 }

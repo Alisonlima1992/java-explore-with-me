@@ -1,5 +1,6 @@
 package ru.practicum.service;
 
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -36,6 +37,7 @@ public class EventServiceImpl implements EventService {
     private final RequestRepository requestRepository;
     private final EventMapper eventMapper;
     private final StatsIntegrationService statsIntegrationService;
+    private final EntityManager entityManager;
 
     @Override
     @Transactional
@@ -289,7 +291,17 @@ public class EventServiceImpl implements EventService {
     public EventFullDto getEventByPublic(Long eventId) {
         log.info("Getting event id: {} by public", eventId);
 
-        eventRepository.incrementViews(eventId);
+        String updateSql = "UPDATE events SET views = COALESCE(views, 0) + 1 WHERE id = ?";
+
+        try {
+            int updated = entityManager.createNativeQuery(updateSql)
+                    .setParameter(1, eventId)
+                    .executeUpdate();
+
+            log.debug("Updated {} rows for event id: {}", updated, eventId);
+        } catch (Exception e) {
+            log.error("Failed to update views: {}", e.getMessage());
+        }
 
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Событие", eventId));
@@ -301,17 +313,18 @@ public class EventServiceImpl implements EventService {
         Integer confirmedRequests = requestRepository.countConfirmedRequestsByEventId(eventId);
         event.setConfirmedRequests(confirmedRequests);
 
-        Event updatedEvent = eventRepository.save(event);
+        Event savedEvent = eventRepository.save(event);
+
+        log.info("Event id: {} - current views: {}", eventId, savedEvent.getViews());
+
 
         try {
             statsIntegrationService.saveHit("/events/" + eventId, "127.0.0.1");
         } catch (Exception e) {
-            log.debug("Failed to save hit: {}", e.getMessage());
+            log.debug("Statistic save failed: {}", e.getMessage());
         }
 
-        log.info("Event id: {} retrieved. Views: {}", eventId, updatedEvent.getViews());
-
-        return eventMapper.toFullDto(updatedEvent);
+        return eventMapper.toFullDto(savedEvent);
     }
 
     private void updateEventFields(Event event, UpdateEventRequest updateEvent) {
