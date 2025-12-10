@@ -143,11 +143,25 @@ public class RequestServiceImpl implements RequestService {
             throw new ConflictException("Подтверждение заявок не требуется");
         }
 
-        RequestStatus newStatus = RequestStatus.valueOf(status);
+        RequestStatus newStatus;
+        try {
+            newStatus = RequestStatus.valueOf(status);
+        } catch (IllegalArgumentException e) {
+            throw new ValidationException("Неверный статус: " + status);
+        }
+
+        if (newStatus != RequestStatus.CONFIRMED && newStatus != RequestStatus.REJECTED) {
+            throw new ValidationException("Можно установить только статусы CONFIRMED или REJECTED");
+        }
+
         int confirmedRequests = requestRepository.countConfirmedRequestsByEventId(eventId);
         int limit = event.getParticipantLimit();
 
         List<ParticipationRequest> requests = requestRepository.findAllById(requestIds);
+
+        if (requests.isEmpty()) {
+            throw new NotFoundException("Заявки не найдены");
+        }
 
         requests.forEach(request -> {
             if (!request.getEvent().getId().equals(eventId)) {

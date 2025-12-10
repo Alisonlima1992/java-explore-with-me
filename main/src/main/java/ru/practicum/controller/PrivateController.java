@@ -12,6 +12,7 @@ import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.dto.event.NewEventDto;
 import ru.practicum.dto.event.UpdateEventRequest;
 import ru.practicum.dto.request.ParticipationRequestDto;
+import ru.practicum.exception.ValidationException;
 import ru.practicum.service.CommentService;
 import ru.practicum.service.EventService;
 import ru.practicum.service.RequestService;
@@ -98,6 +99,14 @@ public class PrivateController {
         @SuppressWarnings("unchecked")
         List<Long> requestIds = (List<Long>) updates.get("requestIds");
         String status = (String) updates.get("status");
+
+        if (requestIds == null || requestIds.isEmpty()) {
+            throw new ValidationException("Список ID заявок не может быть пустым");
+        }
+
+        if (status == null || status.isBlank()) {
+            throw new ValidationException("Статус не может быть пустым");
+        }
 
         return requestService.updateRequestStatuses(userId, eventId, requestIds, status);
     }
