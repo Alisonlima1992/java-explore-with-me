@@ -1,5 +1,6 @@
 package ru.practicum.service;
 
+import ru.practicum.dto.request.EventRequestStatusUpdateResult;
 import ru.practicum.dto.request.ParticipationRequestDto;
 
 import java.util.List;
@@ -14,5 +15,5 @@ public interface RequestService {
 
     List<ParticipationRequestDto> getEventRequests(Long userId, Long eventId);
 
-    List<ParticipationRequestDto> updateRequestStatuses(Long userId, Long eventId, List<Long> requestIds, String status);
+    EventRequestStatusUpdateResult updateRequestStatuses(Long userId, Long eventId, List<Long> requestIds, String status);
 }

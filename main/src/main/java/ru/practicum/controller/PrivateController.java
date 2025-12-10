@@ -11,6 +11,7 @@ import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.dto.event.NewEventDto;
 import ru.practicum.dto.event.UpdateEventRequest;
+import ru.practicum.dto.request.EventRequestStatusUpdateResult;
 import ru.practicum.dto.request.ParticipationRequestDto;
 import ru.practicum.exception.ValidationException;
 import ru.practicum.service.CommentService;
@@ -91,9 +92,9 @@ public class PrivateController {
     }
 
     @PatchMapping("/events/{eventId}/requests")
-    public List<ParticipationRequestDto> updateRequestStatuses(@PathVariable Long userId,
-                                                               @PathVariable Long eventId,
-                                                               @RequestBody Map<String, Object> updates) {
+    public EventRequestStatusUpdateResult updateRequestStatuses(@PathVariable Long userId,
+                                                                @PathVariable Long eventId,
+                                                                @RequestBody Map<String, Object> updates) {
         log.info("PATCH /users/{}/events/{}/requests - обновление статусов запросов", userId, eventId);
 
         @SuppressWarnings("unchecked")

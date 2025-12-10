@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.dto.request.EventRequestStatusUpdateResult;
 import ru.practicum.dto.request.ParticipationRequestDto;
 import ru.practicum.exception.*;
 import ru.practicum.mapper.RequestMapper;
@@ -15,6 +16,7 @@ import ru.practicum.repository.RequestRepository;
 import ru.practicum.repository.UserRepository;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -129,7 +131,7 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     @Transactional
-    public List<ParticipationRequestDto> updateRequestStatuses(Long userId, Long eventId, List<Long> requestIds, String status) {
+    public EventRequestStatusUpdateResult updateRequestStatuses(Long userId, Long eventId, List<Long> requestIds, String status) {
         log.info("Updating request statuses for event id: {} by user id: {}", eventId, userId);
 
         Event event = eventRepository.findById(eventId)
@@ -173,6 +175,9 @@ public class RequestServiceImpl implements RequestService {
             }
         });
 
+        List<ParticipationRequest> confirmed = new ArrayList<>();
+        List<ParticipationRequest> rejected = new ArrayList<>();
+
         for (ParticipationRequest request : requests) {
             if (newStatus == RequestStatus.CONFIRMED) {
                 if (limit != 0 && confirmedRequests >= limit) {
@@ -180,19 +185,38 @@ public class RequestServiceImpl implements RequestService {
                 }
                 request.setStatus(RequestStatus.CONFIRMED);
                 confirmedRequests++;
+                confirmed.add(request);
 
                 event.setConfirmedRequests(confirmedRequests);
                 eventRepository.save(event);
             } else if (newStatus == RequestStatus.REJECTED) {
                 request.setStatus(RequestStatus.REJECTED);
+                rejected.add(request);
             }
         }
 
         List<ParticipationRequest> updatedRequests = requestRepository.saveAll(requests);
         log.info("Updated {} requests for event id: {}", updatedRequests.size(), eventId);
 
-        return updatedRequests.stream()
-                .map(requestMapper::toDto)
-                .collect(Collectors.toList());
+        EventRequestStatusUpdateResult result = new EventRequestStatusUpdateResult();
+
+        if (!confirmed.isEmpty()) {
+            result.setConfirmedRequests(confirmed.stream()
+                    .map(requestMapper::toDto)
+                    .collect(Collectors.toList()));
+        } else {
+            result.setConfirmedRequests(List.of());
+        }
+
+        if (!rejected.isEmpty()) {
+            result.setRejectedRequests(rejected.stream()
+                    .map(requestMapper::toDto)
+                    .collect(Collectors.toList()));
+        } else {
+            result.setRejectedRequests(List.of());
+        }
+
+        return result;
     }
+
 }
