@@ -285,6 +285,9 @@ public class EventServiceImpl implements EventService {
         }
 
         if (updateEvent.getParticipantLimit() != null) {
+            if (updateEvent.getParticipantLimit() < 0) {
+                throw new ValidationException("Лимит участников не может быть отрицательным");
+            }
             event.setParticipantLimit(updateEvent.getParticipantLimit());
         }
 
