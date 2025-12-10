@@ -40,6 +40,7 @@ public class NewEventDto {
     @Builder.Default
     private Boolean paid = false;
 
+    @Min(value = 0, message = "Лимит участников не может быть отрицательным")
     @Builder.Default
     private Integer participantLimit = 0;
 

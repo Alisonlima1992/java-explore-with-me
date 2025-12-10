@@ -40,6 +40,10 @@ public class EventServiceImpl implements EventService {
     public EventFullDto createEvent(Long userId, NewEventDto newEventDto) {
         log.info("Creating event for user id: {}", userId);
 
+        if (newEventDto.getParticipantLimit() < 0) {
+            throw new ValidationException("Лимит участников не может быть отрицательным");
+        }
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь", userId));
 

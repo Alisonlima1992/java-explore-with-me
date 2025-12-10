@@ -1,6 +1,8 @@
 package ru.practicum.exception;
 
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -90,4 +92,25 @@ public class GlobalExceptionHandler {
                 "timestamp", LocalDateTime.now()
         );
     }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, Object> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        String message = "Неверный формат JSON";
+
+        if (e.getCause() instanceof InvalidFormatException) {
+            InvalidFormatException ife = (InvalidFormatException) e.getCause();
+            message = String.format("Неверный тип данных для поля '%s'. Ожидается: %s",
+                    ife.getPath().get(ife.getPath().size() - 1).getFieldName(),
+                    ife.getTargetType().getSimpleName());
+        }
+
+        return Map.of(
+                "status", "BAD_REQUEST",
+                "reason", "Некорректный запрос",
+                "message", message,
+                "timestamp", LocalDateTime.now()
+        );
+    }
+
 }
