@@ -166,9 +166,14 @@ public class EventServiceImpl implements EventService {
 
         List<EventState> eventStates = null;
         if (states != null && !states.isEmpty()) {
-            eventStates = states.stream()
-                    .map(EventState::valueOf)
-                    .collect(Collectors.toList());
+            try {
+                eventStates = states.stream()
+                        .map(String::toUpperCase)
+                        .map(EventState::valueOf)
+                        .collect(Collectors.toList());
+            } catch (IllegalArgumentException e) {
+                throw new ValidationException("Некорректный статус события: " + e.getMessage());
+            }
         }
 
         List<Event> events = eventRepository.findEventsByAdmin(
