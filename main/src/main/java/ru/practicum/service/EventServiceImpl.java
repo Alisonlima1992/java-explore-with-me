@@ -165,42 +165,42 @@ public class EventServiceImpl implements EventService {
         log.info("Getting events by admin with filters: users={}, states={}, categories={}",
                 users, states, categories);
 
-        Pageable pageable = PageRequest.of(from / size, size, Sort.by("id").ascending());
-
-        List<EventState> eventStates = null;
-        if (states != null && !states.isEmpty()) {
-            try {
-                eventStates = states.stream()
-                        .map(String::toUpperCase)
-                        .map(EventState::valueOf)
-                        .collect(Collectors.toList());
-            } catch (IllegalArgumentException e) {
-                throw new ValidationException("Некорректный статус события: " + e.getMessage());
-            }
-        }
-
-        List<Long> usersParam = (users != null && !users.isEmpty()) ? users : null;
-        List<Long> categoriesParam = (categories != null && !categories.isEmpty()) ? categories : null;
-
         try {
-            List<Event> events = eventRepository.findEventsByAdmin(
-                    usersParam,
-                    eventStates,
-                    categoriesParam,
-                    rangeStart,
-                    rangeEnd,
-                    pageable
-            ).getContent();
+            String usersStr = (users != null && !users.isEmpty()) ? "NOT_NULL" : null;
+            String statesStr = (states != null && !states.isEmpty()) ? "NOT_NULL" : null;
+            String categoriesStr = (categories != null && !categories.isEmpty()) ? "NOT_NULL" : null;
+            String rangeStartStr = rangeStart != null ? rangeStart.format(FORMATTER) : null;
+            String rangeEndStr = rangeEnd != null ? rangeEnd.format(FORMATTER) : null;
+
+            List<Long> usersList = (users != null && !users.isEmpty()) ? users : Collections.emptyList();
+            List<String> statesList = (states != null && !states.isEmpty()) ? states : Collections.emptyList();
+            List<Long> categoriesList = (categories != null && !categories.isEmpty()) ? categories : Collections.emptyList();
+
+            List<Event> events = eventRepository.findEventsByAdminNative(
+                    usersList,
+                    usersStr,
+                    statesList,
+                    statesStr,
+                    categoriesList,
+                    categoriesStr,
+                    rangeStartStr,
+                    rangeEndStr,
+                    from,
+                    size
+            );
+
+            log.info("Found {} events for admin", events.size());
 
             return events.stream()
                     .map(eventMapper::toFullDto)
                     .collect(Collectors.toList());
 
         } catch (Exception e) {
-            log.error("Error getting events by admin: {}", e.getMessage(), e);
+            log.error("Error in getEventsByAdmin: {}", e.getMessage(), e);
             throw new RuntimeException("Ошибка при получении событий администратором: " + e.getMessage(), e);
         }
     }
+
 
     @Override
     public List<EventShortDto> getEventsByPublic(String text, List<Long> categories, Boolean paid,
@@ -212,27 +212,34 @@ public class EventServiceImpl implements EventService {
             throw new ValidationException("Дата начала не может быть позже даты окончания");
         }
 
-        String rangeStartStr = rangeStart != null ? rangeStart.format(FORMATTER) : null;
-        String rangeEndStr = rangeEnd != null ? rangeEnd.format(FORMATTER) : null;
-
-        if (rangeStartStr == null) {
-            rangeStartStr = LocalDateTime.now().format(FORMATTER);
-        }
-
-        if (rangeEndStr == null) {
-            rangeEndStr = LocalDateTime.now().plusYears(100).format(FORMATTER);
-        }
-
         try {
+            String categoriesStr = (categories != null && !categories.isEmpty()) ? "NOT_NULL" : null;
+            String rangeStartStr = rangeStart != null ? rangeStart.format(FORMATTER) : null;
+            String rangeEndStr = rangeEnd != null ? rangeEnd.format(FORMATTER) : null;
+
+            if (rangeStartStr == null) {
+                rangeStartStr = LocalDateTime.now().format(FORMATTER);
+            }
+
+            if (rangeEndStr == null) {
+                rangeEndStr = LocalDateTime.now().plusYears(100).format(FORMATTER);
+            }
+
+            List<Long> categoriesList = (categories != null && !categories.isEmpty()) ? categories : Collections.emptyList();
+
             List<Event> events = eventRepository.findEventsByPublicNative(
                     text,
-                    categories != null && !categories.isEmpty() ? categories : Collections.emptyList(),
+                    categoriesList,
+                    categoriesStr,
                     paid,
                     rangeStartStr,
                     rangeEndStr,
                     from,
                     size
             );
+
+            log.debug("Found {} events from repository", events.size());
+
             if (onlyAvailable != null && onlyAvailable) {
                 events = events.stream()
                         .filter(event -> {
@@ -241,6 +248,7 @@ public class EventServiceImpl implements EventService {
                             return limit == 0 || confirmed < limit;
                         })
                         .collect(Collectors.toList());
+                log.debug("{} events after onlyAvailable filter", events.size());
             }
             if ("VIEWS".equalsIgnoreCase(sort)) {
                 events.sort((e1, e2) -> {
@@ -260,6 +268,7 @@ public class EventServiceImpl implements EventService {
                         Long viewCount = views.getOrDefault("/events/" + event.getId(), 0L);
                         event.setViews(viewCount);
                     });
+                    log.debug("Updated views for {} events", events.size());
                 } catch (Exception e) {
                     log.warn("Failed to get views: {}", e.getMessage());
                 }
@@ -270,7 +279,7 @@ public class EventServiceImpl implements EventService {
                     .collect(Collectors.toList());
 
         } catch (Exception e) {
-            log.error("Error getting events by public: {}", e.getMessage(), e);
+            log.error("Error in getEventsByPublic: {}", e.getMessage(), e);
             throw new RuntimeException("Ошибка при получении событий: " + e.getMessage(), e);
         }
     }

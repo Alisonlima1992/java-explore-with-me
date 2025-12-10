@@ -25,37 +25,46 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     @Query("SELECT COUNT(e) FROM Event e WHERE e.category.id = :categoryId")
     Long countByCategoryId(@Param("categoryId") Long categoryId);
 
-    @Query("SELECT e FROM Event e " +
-            "WHERE (:users IS NULL OR e.initiator.id IN (:users)) " +
-            "AND (:states IS NULL OR e.state IN (:states)) " +
-            "AND (:categories IS NULL OR e.category.id IN (:categories)) " +
-            "AND (:rangeStart IS NULL OR e.eventDate >= :rangeStart) " +
-            "AND (:rangeEnd IS NULL OR e.eventDate <= :rangeEnd)")
-    Page<Event> findEventsByAdmin(
+    @Query(value = "SELECT * FROM events e " +
+            "WHERE (:usersStr IS NULL OR e.initiator_id IN (:users)) " +
+            "AND (:statesStr IS NULL OR e.state IN (:states)) " +
+            "AND (:categoriesStr IS NULL OR e.category_id IN (:categories)) " +
+            "AND (:rangeStartStr IS NULL OR e.event_date >= TO_TIMESTAMP(:rangeStartStr, 'YYYY-MM-DD HH24:MI:SS')) " +
+            "AND (:rangeEndStr IS NULL OR e.event_date <= TO_TIMESTAMP(:rangeEndStr, 'YYYY-MM-DD HH24:MI:SS')) " +
+            "ORDER BY e.id ASC " +
+            "LIMIT :limit OFFSET :offset",
+            nativeQuery = true)
+    List<Event> findEventsByAdminNative(
             @Param("users") List<Long> users,
-            @Param("states") List<EventState> states,
+            @Param("usersStr") String usersStr,
+            @Param("states") List<String> states,
+            @Param("statesStr") String statesStr,
             @Param("categories") List<Long> categories,
-            @Param("rangeStart") LocalDateTime rangeStart,
-            @Param("rangeEnd") LocalDateTime rangeEnd,
-            Pageable pageable);
+            @Param("categoriesStr") String categoriesStr,
+            @Param("rangeStartStr") String rangeStartStr,
+            @Param("rangeEndStr") String rangeEndStr,
+            @Param("offset") int offset,
+            @Param("limit") int limit);
 
+    // НАТИВНЫЙ запрос для публичного доступа
     @Query(value = "SELECT * FROM events e " +
             "WHERE e.state = 'PUBLISHED' " +
             "AND (:text IS NULL OR LOWER(e.annotation) LIKE LOWER(CONCAT('%', :text, '%')) " +
             "OR LOWER(e.description) LIKE LOWER(CONCAT('%', :text, '%'))) " +
-            "AND (:categories IS NULL OR e.category_id IN (:categories)) " +
+            "AND (:categoriesStr IS NULL OR e.category_id IN (:categories)) " +
             "AND (:paid IS NULL OR e.paid = :paid) " +
-            "AND (:rangeStart IS NULL OR e.event_date >= CAST(:rangeStart AS timestamp)) " +
-            "AND (:rangeEnd IS NULL OR e.event_date <= CAST(:rangeEnd AS timestamp)) " +
+            "AND (:rangeStartStr IS NULL OR e.event_date >= TO_TIMESTAMP(:rangeStartStr, 'YYYY-MM-DD HH24:MI:SS')) " +
+            "AND (:rangeEndStr IS NULL OR e.event_date <= TO_TIMESTAMP(:rangeEndStr, 'YYYY-MM-DD HH24:MI:SS')) " +
             "ORDER BY e.event_date ASC " +
             "LIMIT :limit OFFSET :offset",
             nativeQuery = true)
     List<Event> findEventsByPublicNative(
             @Param("text") String text,
             @Param("categories") List<Long> categories,
+            @Param("categoriesStr") String categoriesStr,
             @Param("paid") Boolean paid,
-            @Param("rangeStart") String rangeStart,
-            @Param("rangeEnd") String rangeEnd,
+            @Param("rangeStartStr") String rangeStartStr,
+            @Param("rangeEndStr") String rangeEndStr,
             @Param("offset") int offset,
             @Param("limit") int limit);
 
