@@ -250,13 +250,7 @@ public class EventServiceImpl implements EventService {
                         .collect(Collectors.toList());
                 log.debug("{} events after onlyAvailable filter", events.size());
             }
-            if ("VIEWS".equalsIgnoreCase(sort)) {
-                events.sort((e1, e2) -> {
-                    Long views1 = e1.getViews() != null ? e1.getViews() : 0L;
-                    Long views2 = e2.getViews() != null ? e2.getViews() : 0L;
-                    return views2.compareTo(views1);
-                });
-            }
+
             if (!events.isEmpty()) {
                 List<String> uris = events.stream()
                         .map(e -> "/events/" + e.getId())
@@ -264,14 +258,34 @@ public class EventServiceImpl implements EventService {
 
                 try {
                     Map<String, Long> views = statsIntegrationService.getViewsForUris(uris);
-                    events.forEach(event -> {
-                        Long viewCount = views.getOrDefault("/events/" + event.getId(), 0L);
-                        event.setViews(viewCount);
-                    });
-                    log.debug("Updated views for {} events", events.size());
+
+                    List<Event> updatedEvents = new ArrayList<>();
+                    for (Event event : events) {
+                        String uri = "/events/" + event.getId();
+                        Long viewCount = views.getOrDefault(uri, 0L);
+
+                        if (!viewCount.equals(event.getViews() != null ? event.getViews() : 0L)) {
+                            event.setViews(viewCount);
+                            Event savedEvent = eventRepository.save(event);
+                            updatedEvents.add(savedEvent);
+                        } else {
+                            updatedEvents.add(event);
+                        }
+                    }
+                    events = updatedEvents;
+
+                    log.debug("Updated views for {} events from statistics", events.size());
                 } catch (Exception e) {
-                    log.warn("Failed to get views: {}", e.getMessage());
+                    log.warn("Failed to get views from statistics: {}", e.getMessage());
                 }
+            }
+
+            if ("VIEWS".equalsIgnoreCase(sort)) {
+                events.sort((e1, e2) -> {
+                    Long views1 = e1.getViews() != null ? e1.getViews() : 0L;
+                    Long views2 = e2.getViews() != null ? e2.getViews() : 0L;
+                    return views2.compareTo(views1); // по убыванию
+                });
             }
 
             return events.stream()
