@@ -2,6 +2,7 @@ package ru.practicum.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -75,6 +76,17 @@ public class GlobalExceptionHandler {
                 "status", "INTERNAL_SERVER_ERROR",
                 "reason", "Внутренняя ошибка сервера",
                 "message", e.getMessage(),
+                "timestamp", LocalDateTime.now()
+        );
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, Object> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
+        return Map.of(
+                "status", "BAD_REQUEST",
+                "reason", "Отсутствует обязательный параметр запроса",
+                "message", String.format("Параметр '%s' обязателен", e.getParameterName()),
                 "timestamp", LocalDateTime.now()
         );
     }

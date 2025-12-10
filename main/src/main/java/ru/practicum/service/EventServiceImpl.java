@@ -198,8 +198,14 @@ public class EventServiceImpl implements EventService {
         Pageable pageable = PageRequest.of(from / size, size, sorting);
 
         List<Event> events = eventRepository.findEventsByPublic(
-                text, categories, paid, rangeStart, rangeEnd, onlyAvailable, pageable
+                text, categories, paid, rangeStart, rangeEnd, pageable
         ).getContent();
+
+        if (onlyAvailable != null && onlyAvailable) {
+            events = events.stream()
+                    .filter(event -> event.getConfirmedRequests() < event.getParticipantLimit())
+                    .collect(Collectors.toList());
+        }
 
         Map<String, Long> views = statsIntegrationService.getViewsForUris(
                 events.stream()

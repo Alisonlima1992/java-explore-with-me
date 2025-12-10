@@ -70,7 +70,7 @@ public class PrivateController {
     @PostMapping("/requests")
     @ResponseStatus(HttpStatus.CREATED)
     public ParticipationRequestDto createRequest(@PathVariable Long userId,
-                                                 @RequestParam Long eventId) {
+                                                 @RequestParam(required = true) Long eventId) {
         log.info("POST /users/{}/requests - создание запроса на участие", userId);
         return requestService.createRequest(userId, eventId);
     }
