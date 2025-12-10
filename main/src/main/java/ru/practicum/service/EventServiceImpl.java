@@ -160,7 +160,8 @@ public class EventServiceImpl implements EventService {
     public List<EventFullDto> getEventsByAdmin(List<Long> users, List<String> states, List<Long> categories,
                                                LocalDateTime rangeStart, LocalDateTime rangeEnd,
                                                Integer from, Integer size) {
-        log.info("Getting events by admin with filters");
+        log.info("Getting events by admin with filters: users={}, states={}, categories={}",
+                users, states, categories);
 
         Pageable pageable = PageRequest.of(from / size, size, Sort.by("id").ascending());
 
@@ -176,13 +177,27 @@ public class EventServiceImpl implements EventService {
             }
         }
 
-        List<Event> events = eventRepository.findEventsByAdmin(
-                users, eventStates, categories, rangeStart, rangeEnd, pageable
-        ).getContent();
+        List<Long> usersParam = (users != null && !users.isEmpty()) ? users : null;
+        List<Long> categoriesParam = (categories != null && !categories.isEmpty()) ? categories : null;
 
-        return events.stream()
-                .map(eventMapper::toFullDto)
-                .collect(Collectors.toList());
+        try {
+            List<Event> events = eventRepository.findEventsByAdmin(
+                    usersParam,
+                    eventStates,
+                    categoriesParam,
+                    rangeStart,
+                    rangeEnd,
+                    pageable
+            ).getContent();
+
+            return events.stream()
+                    .map(eventMapper::toFullDto)
+                    .collect(Collectors.toList());
+
+        } catch (Exception e) {
+            log.error("Error getting events by admin: {}", e.getMessage(), e);
+            throw new RuntimeException("Ошибка при получении событий администратором: " + e.getMessage(), e);
+        }
     }
 
     @Override
