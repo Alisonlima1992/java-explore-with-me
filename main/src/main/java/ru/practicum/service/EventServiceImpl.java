@@ -289,37 +289,31 @@ public class EventServiceImpl implements EventService {
     public EventFullDto getEventByPublic(Long eventId) {
         log.info("Getting event id: {} by public", eventId);
 
-        Event eventBefore = eventRepository.findById(eventId)
+        Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Событие", eventId));
 
-        log.info("BEFORE - Event id: {} views: {}", eventId, eventBefore.getViews());
-
-        if (eventBefore.getState() != EventState.PUBLISHED) {
+        if (event.getState() != EventState.PUBLISHED) {
             throw new NotFoundException("Событие", eventId);
         }
 
-        Long newViews = (eventBefore.getViews() != null ? eventBefore.getViews() : 0L) + 1;
-        eventBefore.setViews(newViews);
+        statsIntegrationService.saveHit("/events/" + eventId, "127.0.0.1");
 
-        Integer confirmedRequests = requestRepository.countConfirmedRequestsByEventId(eventId);
-        eventBefore.setConfirmedRequests(confirmedRequests);
+        Long views = statsIntegrationService.getViews("/events/" + eventId);
 
-        Event eventAfter = eventRepository.save(eventBefore);
-
-        log.info("AFTER - Event id: {} views: {}", eventId, eventAfter.getViews());
-
-        Event eventCheck = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Событие", eventId));
-
-        log.info("CHECK - Event id: {} views: {}", eventId, eventCheck.getViews());
-
-        try {
-            statsIntegrationService.saveHit("/events/" + eventId, "127.0.0.1");
-        } catch (Exception e) {
-            log.debug("Statistic error: {}", e.getMessage());
+        if (views == null || views == 0) {
+            views = 1L;
+        } else {
+            views = views + 1;
         }
 
-        return eventMapper.toFullDto(eventAfter);
+        event.setViews(views);
+
+        Integer confirmedRequests = requestRepository.countConfirmedRequestsByEventId(eventId);
+        event.setConfirmedRequests(confirmedRequests);
+
+        Event updatedEvent = eventRepository.save(event);
+
+        return eventMapper.toFullDto(updatedEvent);
     }
 
     private void updateEventFields(Event event, UpdateEventRequest updateEvent) {
