@@ -204,14 +204,23 @@ public class EventServiceImpl implements EventService {
     public List<EventShortDto> getEventsByPublic(String text, List<Long> categories, Boolean paid,
                                                  LocalDateTime rangeStart, LocalDateTime rangeEnd,
                                                  Boolean onlyAvailable, String sort, Integer from, Integer size) {
-        log.info("Getting events by public with filters");
+        log.info("Getting events by public with filters: text='{}', categories={}, paid={}, " +
+                        "rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
+                text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
 
         if (rangeStart != null && rangeEnd != null && rangeStart.isAfter(rangeEnd)) {
             throw new ValidationException("Дата начала не может быть позже даты окончания");
         }
 
-        if (rangeStart == null) {
-            rangeStart = LocalDateTime.now();
+        LocalDateTime actualRangeStart = rangeStart;
+        LocalDateTime actualRangeEnd = rangeEnd;
+
+        if (actualRangeStart == null) {
+            actualRangeStart = LocalDateTime.now();
+        }
+
+        if (actualRangeEnd == null) {
+            actualRangeEnd = LocalDateTime.now().plusYears(100);
         }
 
         Sort sorting = Sort.by("eventDate").ascending();
@@ -221,34 +230,72 @@ public class EventServiceImpl implements EventService {
 
         Pageable pageable = PageRequest.of(from / size, size, sorting);
 
-        List<Event> events = eventRepository.findEventsByPublic(
-                text, categories, paid, rangeStart, rangeEnd, pageable
-        ).getContent();
+        try {
+            List<Long> categoriesList = categories != null ? categories : Collections.emptyList();
 
-        if (onlyAvailable != null && onlyAvailable) {
-            events = events.stream()
-                    .filter(event -> {
-                        Integer confirmed = event.getConfirmedRequests() != null ? event.getConfirmedRequests() : 0;
-                        Integer limit = event.getParticipantLimit() != null ? event.getParticipantLimit() : 0;
-                        return confirmed < limit;
-                    })
-                    .collect(Collectors.toList());
-        }
+            List<Event> events = eventRepository.findEventsByPublic(
+                    text,
+                    categoriesList.isEmpty() ? null : categoriesList,
+                    paid,
+                    actualRangeStart,
+                    actualRangeEnd,
+                    pageable
+            ).getContent();
 
-        Map<String, Long> views = statsIntegrationService.getViewsForUris(
-                events.stream()
+            log.debug("Found {} events after repository query", events.size());
+
+
+            if (onlyAvailable != null && onlyAvailable) {
+                events = events.stream()
+                        .filter(event -> {
+                            Integer confirmed = event.getConfirmedRequests() != null ? event.getConfirmedRequests() : 0;
+                            Integer limit = event.getParticipantLimit() != null ? event.getParticipantLimit() : 0;
+                            boolean isAvailable = limit == 0 || confirmed < limit;
+                            return isAvailable;
+                        })
+                        .collect(Collectors.toList());
+                log.debug("{} events after onlyAvailable filter", events.size());
+            }
+
+            Map<String, Long> views = Collections.emptyMap();
+            if (!events.isEmpty()) {
+                List<String> uris = events.stream()
                         .map(e -> "/events/" + e.getId())
-                        .collect(Collectors.toList())
-        );
+                        .collect(Collectors.toList());
 
-        events.forEach(event -> {
-            Long viewCount = views.getOrDefault("/events/" + event.getId(), 0L);
-            event.setViews(viewCount);
-        });
+                try {
+                    views = statsIntegrationService.getViewsForUris(uris);
+                    log.debug("Retrieved views for {} URIs", uris.size());
+                } catch (Exception e) {
+                    log.warn("Failed to get views statistics: {}", e.getMessage());
+                }
+            }
 
-        return events.stream()
-                .map(eventMapper::toShortDto)
-                .collect(Collectors.toList());
+            final Map<String, Long> finalViews = views;
+            events.forEach(event -> {
+                Long viewCount = finalViews.getOrDefault("/events/" + event.getId(), 0L);
+                event.setViews(viewCount);
+            });
+
+            if ("VIEWS".equalsIgnoreCase(sort)) {
+                events.sort((e1, e2) -> {
+                    Long views1 = e1.getViews() != null ? e1.getViews() : 0L;
+                    Long views2 = e2.getViews() != null ? e2.getViews() : 0L;
+                    return views2.compareTo(views1); // по убыванию
+                });
+            }
+
+            List<EventShortDto> result = events.stream()
+                    .map(eventMapper::toShortDto)
+                    .collect(Collectors.toList());
+
+            log.info("Returning {} events for public request", result.size());
+            return result;
+
+        } catch (Exception e) {
+            log.error("Error getting events by public: {}", e.getMessage(), e);
+            throw new RuntimeException("Ошибка при получении событий: " + e.getMessage(), e);
+        }
     }
 
     @Override
