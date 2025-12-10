@@ -39,21 +39,25 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             @Param("rangeEnd") LocalDateTime rangeEnd,
             Pageable pageable);
 
-    @Query("SELECT e FROM Event e " +
+    @Query(value = "SELECT * FROM events e " +
             "WHERE e.state = 'PUBLISHED' " +
             "AND (:text IS NULL OR LOWER(e.annotation) LIKE LOWER(CONCAT('%', :text, '%')) " +
             "OR LOWER(e.description) LIKE LOWER(CONCAT('%', :text, '%'))) " +
-            "AND (:categories IS NULL OR e.category.id IN :categories) " +
+            "AND (:categories IS NULL OR e.category_id IN (:categories)) " +
             "AND (:paid IS NULL OR e.paid = :paid) " +
-            "AND (:rangeStart IS NULL OR e.eventDate >= :rangeStart) " +
-            "AND (:rangeEnd IS NULL OR e.eventDate <= :rangeEnd)")
-    Page<Event> findEventsByPublic(
+            "AND (:rangeStart IS NULL OR e.event_date >= CAST(:rangeStart AS timestamp)) " +
+            "AND (:rangeEnd IS NULL OR e.event_date <= CAST(:rangeEnd AS timestamp)) " +
+            "ORDER BY e.event_date ASC " +
+            "LIMIT :limit OFFSET :offset",
+            nativeQuery = true)
+    List<Event> findEventsByPublicNative(
             @Param("text") String text,
             @Param("categories") List<Long> categories,
             @Param("paid") Boolean paid,
-            @Param("rangeStart") LocalDateTime rangeStart,
-            @Param("rangeEnd") LocalDateTime rangeEnd,
-            Pageable pageable);
+            @Param("rangeStart") String rangeStart,
+            @Param("rangeEnd") String rangeEnd,
+            @Param("offset") int offset,
+            @Param("limit") int limit);
 
     @Query("SELECT COUNT(r) FROM ParticipationRequest r WHERE r.event.id = :eventId AND r.status = 'CONFIRMED'")
     Integer countConfirmedRequests(@Param("eventId") Long eventId);

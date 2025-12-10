@@ -19,6 +19,7 @@ import ru.practicum.repository.*;
 import ru.practicum.util.Constants;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class EventServiceImpl implements EventService {
 
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
@@ -204,79 +206,44 @@ public class EventServiceImpl implements EventService {
     public List<EventShortDto> getEventsByPublic(String text, List<Long> categories, Boolean paid,
                                                  LocalDateTime rangeStart, LocalDateTime rangeEnd,
                                                  Boolean onlyAvailable, String sort, Integer from, Integer size) {
-        log.info("Getting events by public with filters: text='{}', categories={}, paid={}, " +
-                        "rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
-                text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
+        log.info("Getting events by public with filters");
 
         if (rangeStart != null && rangeEnd != null && rangeStart.isAfter(rangeEnd)) {
             throw new ValidationException("Дата начала не может быть позже даты окончания");
         }
 
-        LocalDateTime actualRangeStart = rangeStart;
-        LocalDateTime actualRangeEnd = rangeEnd;
+        String rangeStartStr = rangeStart != null ? rangeStart.format(FORMATTER) : null;
+        String rangeEndStr = rangeEnd != null ? rangeEnd.format(FORMATTER) : null;
 
-        if (actualRangeStart == null) {
-            actualRangeStart = LocalDateTime.now();
+        if (rangeStartStr == null) {
+            rangeStartStr = LocalDateTime.now().format(FORMATTER);
         }
 
-        if (actualRangeEnd == null) {
-            actualRangeEnd = LocalDateTime.now().plusYears(100);
+        if (rangeEndStr == null) {
+            rangeEndStr = LocalDateTime.now().plusYears(100).format(FORMATTER);
         }
-
-        Sort sorting = Sort.by("eventDate").ascending();
-        if ("VIEWS".equalsIgnoreCase(sort)) {
-            sorting = Sort.by("views").descending();
-        }
-
-        Pageable pageable = PageRequest.of(from / size, size, sorting);
 
         try {
-            List<Long> categoriesList = categories != null ? categories : Collections.emptyList();
-
-            List<Event> events = eventRepository.findEventsByPublic(
+            List<Event> events = eventRepository.findEventsByPublicNative(
                     text,
-                    categoriesList.isEmpty() ? null : categoriesList,
+                    categories != null && !categories.isEmpty() ? categories : Collections.emptyList(),
                     paid,
-                    actualRangeStart,
-                    actualRangeEnd,
-                    pageable
-            ).getContent();
-
-            log.debug("Found {} events after repository query", events.size());
-
-
+                    rangeStartStr,
+                    rangeEndStr,
+                    from,
+                    size
+            );
+            
             if (onlyAvailable != null && onlyAvailable) {
                 events = events.stream()
                         .filter(event -> {
                             Integer confirmed = event.getConfirmedRequests() != null ? event.getConfirmedRequests() : 0;
                             Integer limit = event.getParticipantLimit() != null ? event.getParticipantLimit() : 0;
-                            boolean isAvailable = limit == 0 || confirmed < limit;
-                            return isAvailable;
+                            return limit == 0 || confirmed < limit;
                         })
                         .collect(Collectors.toList());
-                log.debug("{} events after onlyAvailable filter", events.size());
             }
-
-            Map<String, Long> views = Collections.emptyMap();
-            if (!events.isEmpty()) {
-                List<String> uris = events.stream()
-                        .map(e -> "/events/" + e.getId())
-                        .collect(Collectors.toList());
-
-                try {
-                    views = statsIntegrationService.getViewsForUris(uris);
-                    log.debug("Retrieved views for {} URIs", uris.size());
-                } catch (Exception e) {
-                    log.warn("Failed to get views statistics: {}", e.getMessage());
-                }
-            }
-
-            final Map<String, Long> finalViews = views;
-            events.forEach(event -> {
-                Long viewCount = finalViews.getOrDefault("/events/" + event.getId(), 0L);
-                event.setViews(viewCount);
-            });
-
+            
             if ("VIEWS".equalsIgnoreCase(sort)) {
                 events.sort((e1, e2) -> {
                     Long views1 = e1.getViews() != null ? e1.getViews() : 0L;
@@ -284,13 +251,26 @@ public class EventServiceImpl implements EventService {
                     return views2.compareTo(views1); // по убыванию
                 });
             }
+            
+            if (!events.isEmpty()) {
+                List<String> uris = events.stream()
+                        .map(e -> "/events/" + e.getId())
+                        .collect(Collectors.toList());
 
-            List<EventShortDto> result = events.stream()
+                try {
+                    Map<String, Long> views = statsIntegrationService.getViewsForUris(uris);
+                    events.forEach(event -> {
+                        Long viewCount = views.getOrDefault("/events/" + event.getId(), 0L);
+                        event.setViews(viewCount);
+                    });
+                } catch (Exception e) {
+                    log.warn("Failed to get views: {}", e.getMessage());
+                }
+            }
+
+            return events.stream()
                     .map(eventMapper::toShortDto)
                     .collect(Collectors.toList());
-
-            log.info("Returning {} events for public request", result.size());
-            return result;
 
         } catch (Exception e) {
             log.error("Error getting events by public: {}", e.getMessage(), e);
