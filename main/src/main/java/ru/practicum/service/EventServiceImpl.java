@@ -289,20 +289,26 @@ public class EventServiceImpl implements EventService {
     public EventFullDto getEventByPublic(Long eventId) {
         log.info("Getting event id: {} by public", eventId);
 
-        Event event = eventRepository.findById(eventId)
+        Event event = eventRepository.findByIdWithLock(eventId)
                 .orElseThrow(() -> new NotFoundException("Событие", eventId));
 
         if (event.getState() != EventState.PUBLISHED) {
             throw new NotFoundException("Событие", eventId);
         }
 
-        eventRepository.incrementViews(eventId);
+        Long currentViews = event.getViews() != null ? event.getViews() : 0L;
+        event.setViews(currentViews + 1);
 
-        Event updatedEvent = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Событие", eventId));
+        log.debug("Views before save: {}", event.getViews());
+
+        Event savedEvent = eventRepository.save(event);
+
+        log.debug("Views after save: {}", savedEvent.getViews());
 
         Integer confirmedRequests = requestRepository.countConfirmedRequestsByEventId(eventId);
-        updatedEvent.setConfirmedRequests(confirmedRequests);
+        savedEvent.setConfirmedRequests(confirmedRequests);
+
+        Event finalEvent = eventRepository.save(savedEvent);
 
         try {
             statsIntegrationService.saveHit("/events/" + eventId, "127.0.0.1");
@@ -310,9 +316,9 @@ public class EventServiceImpl implements EventService {
             log.warn("Failed to save hit: {}", e.getMessage());
         }
 
-        log.info("Event id: {} retrieved. Views should be incremented", eventId);
+        log.info("Event id: {} retrieved. Final views: {}", eventId, finalEvent.getViews());
 
-        return eventMapper.toFullDto(updatedEvent);
+        return eventMapper.toFullDto(finalEvent);
     }
 
     private void updateEventFields(Event event, UpdateEventRequest updateEvent) {
