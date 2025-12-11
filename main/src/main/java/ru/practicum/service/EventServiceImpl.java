@@ -310,7 +310,7 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Событие", eventId);
         }
 
-        statsIntegrationService.saveHit("/events/" + eventId, "127.0.0.1");
+        //statsIntegrationService.saveHit("/events/" + eventId, "127.0.0.1");
 
         Long views = statsIntegrationService.getViews("/events/" + eventId);
 

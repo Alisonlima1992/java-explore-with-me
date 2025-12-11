@@ -28,10 +28,12 @@ public class StatsIntegrationService {
             hitDto.setIp(ip);
             hitDto.setTimestamp(LocalDateTime.now());
 
+            log.info("Saving hit for URI: {}, IP: {}, Time: {}", uri, ip, hitDto.getTimestamp());
+
             statsClient.postHit(hitDto);
             log.debug("Hit saved for uri: {}, ip: {}", uri, ip);
         } catch (Exception e) {
-            log.error("Failed to save hit for uri: {}, ip: {}. Error: {}", uri, ip, e.getMessage());
+            log.error("Failed to save hit for uri: {}, ip: {}. Error: {}", uri, ip, e.getMessage(), e);
         }
     }
 
