@@ -17,14 +17,12 @@ import ru.practicum.dto.event.UpdateEventRequest;
 import ru.practicum.dto.request.EventRequestStatusUpdateRequest;
 import ru.practicum.dto.request.EventRequestStatusUpdateResult;
 import ru.practicum.dto.request.ParticipationRequestDto;
-import ru.practicum.exception.ValidationException;
 import ru.practicum.service.CommentService;
 import ru.practicum.service.EventService;
 import ru.practicum.service.RequestService;
 import ru.practicum.util.Constants;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/users/{userId}")
