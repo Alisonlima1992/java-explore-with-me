@@ -1,0 +1,138 @@
+package ru.practicum.controller;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+import ru.practicum.dto.comment.CommentDto;
+import ru.practicum.dto.comment.NewCommentDto;
+import ru.practicum.dto.event.EventFullDto;
+import ru.practicum.dto.event.EventShortDto;
+import ru.practicum.dto.event.NewEventDto;
+import ru.practicum.dto.event.UpdateEventRequest;
+import ru.practicum.dto.request.EventRequestStatusUpdateRequest;
+import ru.practicum.dto.request.EventRequestStatusUpdateResult;
+import ru.practicum.dto.request.ParticipationRequestDto;
+import ru.practicum.service.CommentService;
+import ru.practicum.service.EventService;
+import ru.practicum.service.RequestService;
+import ru.practicum.util.Constants;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/users/{userId}")
+@RequiredArgsConstructor
+@Slf4j
+@Validated
+public class PrivateController {
+
+    private final EventService eventService;
+    private final RequestService requestService;
+    private final CommentService commentService;
+
+    @GetMapping("/events")
+    public List<EventShortDto> getUserEvents(@PathVariable Long userId,
+                                             @RequestParam(defaultValue = Constants.DEFAULT_PAGE_FROM) @Min(0) Integer from,
+                                             @RequestParam(defaultValue = Constants.DEFAULT_PAGE_SIZE) @Positive Integer size) {
+        log.info("GET /users/{}/events - получение событий пользователя", userId);
+        return eventService.getUserEvents(userId, from, size);
+    }
+
+    @PostMapping("/events")
+    @ResponseStatus(HttpStatus.CREATED)
+    public EventFullDto createEvent(@PathVariable Long userId,
+                                    @Valid @RequestBody NewEventDto newEventDto) {
+        log.info("POST /users/{}/events - создание события", userId);
+        return eventService.createEvent(userId, newEventDto);
+    }
+
+    @GetMapping("/events/{eventId}")
+    public EventFullDto getUserEvent(@PathVariable Long userId,
+                                     @PathVariable Long eventId) {
+        log.info("GET /users/{}/events/{} - получение события пользователя", userId, eventId);
+        return eventService.getUserEventById(userId, eventId);
+    }
+
+    @PatchMapping("/events/{eventId}")
+    public EventFullDto updateEvent(@PathVariable Long userId,
+                                    @PathVariable Long eventId,
+                                    @Valid @RequestBody UpdateEventRequest updateEventRequest) {
+        log.info("PATCH /users/{}/events/{} - обновление события пользователем", userId, eventId);
+        return eventService.updateEventByUser(userId, eventId, updateEventRequest);
+    }
+
+    @GetMapping("/requests")
+    public List<ParticipationRequestDto> getUserRequests(@PathVariable Long userId) {
+        log.info("GET /users/{}/requests - получение запросов пользователя", userId);
+        return requestService.getUserRequests(userId);
+    }
+
+    @PostMapping("/requests")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ParticipationRequestDto createRequest(@PathVariable Long userId,
+                                                 @RequestParam(required = true) Long eventId) {
+        log.info("POST /users/{}/requests - создание запроса на участие", userId);
+        return requestService.createRequest(userId, eventId);
+    }
+
+    @PatchMapping("/requests/{requestId}/cancel")
+    public ParticipationRequestDto cancelRequest(@PathVariable Long userId,
+                                                 @PathVariable Long requestId) {
+        log.info("PATCH /users/{}/requests/{}/cancel - отмена запроса", userId, requestId);
+        return requestService.cancelRequest(userId, requestId);
+    }
+
+    @GetMapping("/events/{eventId}/requests")
+    public List<ParticipationRequestDto> getEventRequests(@PathVariable Long userId,
+                                                          @PathVariable Long eventId) {
+        log.info("GET /users/{}/events/{}/requests - получение запросов на участие в событии", userId, eventId);
+        return requestService.getEventRequests(userId, eventId);
+    }
+
+    @PatchMapping("/events/{eventId}/requests")
+    public EventRequestStatusUpdateResult updateRequestStatuses(@PathVariable Long userId,
+                                                                @PathVariable Long eventId,
+                                                                @Valid @RequestBody EventRequestStatusUpdateRequest request) {
+        log.info("PATCH /users/{}/events/{}/requests - обновление статусов запросов", userId, eventId);
+
+        return requestService.updateRequestStatuses(userId, eventId, request.getRequestIds(), request.getStatus());
+    }
+
+    @PostMapping("/events/{eventId}/comments")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CommentDto createComment(@PathVariable Long userId,
+                                    @PathVariable Long eventId,
+                                    @Valid @RequestBody NewCommentDto newCommentDto) {
+        log.info("POST /users/{}/events/{}/comments - создание комментария", userId, eventId);
+        return commentService.createComment(userId, eventId, newCommentDto);
+    }
+
+    @PatchMapping("/comments/{commentId}")
+    public CommentDto updateComment(@PathVariable Long userId,
+                                    @PathVariable Long commentId,
+                                    @Valid @RequestBody NewCommentDto updateCommentDto) {
+        log.info("PATCH /users/{}/comments/{} - обновление комментария", userId, commentId);
+        return commentService.updateComment(userId, commentId, updateCommentDto);
+    }
+
+    @DeleteMapping("/comments/{commentId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteComment(@PathVariable Long userId,
+                              @PathVariable Long commentId) {
+        log.info("DELETE /users/{}/comments/{} - удаление комментария пользователем", userId, commentId);
+        commentService.deleteCommentByUser(userId, commentId);
+    }
+
+    @GetMapping("/comments")
+    public List<CommentDto> getUserComments(@PathVariable Long userId,
+                                            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_FROM) @Min(0) Integer from,
+                                            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_SIZE) @Positive Integer size) {
+        log.info("GET /users/{}/comments - получение комментариев пользователя", userId);
+        return commentService.getUserComments(userId, from, size);
+    }
+}
