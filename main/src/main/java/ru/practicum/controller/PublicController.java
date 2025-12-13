@@ -1,9 +1,12 @@
 package ru.practicum.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.comment.CommentDto;
@@ -23,6 +26,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
+@Validated
 public class PublicController {
 
     private final CategoryService categoryService;
@@ -33,8 +37,8 @@ public class PublicController {
 
     @GetMapping("/categories")
     public List<CategoryDto> getCategories(
-            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_FROM) Integer from,
-            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_SIZE) Integer size) {
+            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_FROM) @Min(0) Integer from,
+            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_SIZE) @Positive Integer size) {
         log.info("GET /categories - получение категорий");
         return categoryService.getCategories(from, size);
     }
@@ -54,8 +58,8 @@ public class PublicController {
             @RequestParam(required = false) @DateTimeFormat(pattern = Constants.DATE_TIME_FORMAT) LocalDateTime rangeEnd,
             @RequestParam(defaultValue = "false") Boolean onlyAvailable,
             @RequestParam(required = false) String sort,
-            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_FROM) Integer from,
-            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_SIZE) Integer size,
+            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_FROM) @Min(0) Integer from,
+            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_SIZE) @Positive Integer size,
             HttpServletRequest request) {
         log.info("GET /events - получение событий с фильтрами");
 
@@ -77,8 +81,8 @@ public class PublicController {
     @GetMapping("/compilations")
     public List<CompilationDto> getCompilations(
             @RequestParam(required = false) Boolean pinned,
-            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_FROM) Integer from,
-            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_SIZE) Integer size,
+            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_FROM) @Min(0) Integer from,
+            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_SIZE) @Positive Integer size,
             HttpServletRequest request) {
         log.info("GET /compilations - получение подборок");
 
@@ -99,8 +103,8 @@ public class PublicController {
     @GetMapping("/events/{eventId}/comments")
     public List<CommentDto> getEventComments(
             @PathVariable Long eventId,
-            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_FROM) Integer from,
-            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_SIZE) Integer size,
+            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_FROM) @Min(0) Integer from,
+            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_SIZE) @Positive Integer size,
             HttpServletRequest request) {
         log.info("GET /events/{}/comments - получение комментариев события", eventId);
 

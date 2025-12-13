@@ -1,5 +1,7 @@
 package ru.practicum.service;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import ru.practicum.dto.comment.CommentDto;
 import ru.practicum.dto.comment.NewCommentDto;
 
@@ -15,9 +17,9 @@ public interface CommentService {
 
     void deleteCommentByAdmin(Long commentId);
 
-    List<CommentDto> getEventComments(Long eventId, Integer from, Integer size);
+    List<CommentDto> getEventComments(Long eventId, @Min(0) Integer from, @Positive Integer size);
 
-    List<CommentDto> getUserComments(Long userId, Integer from, Integer size);
+    List<CommentDto> getUserComments(Long userId, @Min(0) Integer from, @Positive Integer size);
 
     CommentDto getCommentById(Long commentId);
 }

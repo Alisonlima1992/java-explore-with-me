@@ -1,5 +1,7 @@
 package ru.practicum.service;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import ru.practicum.dto.compilation.CompilationDto;
 import ru.practicum.dto.compilation.NewCompilationDto;
 
@@ -13,7 +15,7 @@ public interface CompilationService {
 
     void deleteCompilation(Long compilationId);
 
-    List<CompilationDto> getCompilations(Boolean pinned, Integer from, Integer size);
+    List<CompilationDto> getCompilations(Boolean pinned, @Min(0) Integer from, @Positive Integer size);
 
     CompilationDto getCompilationById(Long compilationId);
 }

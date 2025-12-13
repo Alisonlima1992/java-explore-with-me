@@ -1,5 +1,7 @@
 package ru.practicum.service;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.category.NewCategoryDto;
 
@@ -13,7 +15,7 @@ public interface CategoryService {
 
     void deleteCategory(Long categoryId);
 
-    List<CategoryDto> getCategories(Integer from, Integer size);
+    List<CategoryDto> getCategories(@Min(0) Integer from, @Positive Integer size);
 
     CategoryDto getCategoryById(Long categoryId);
 }

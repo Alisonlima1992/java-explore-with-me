@@ -1,9 +1,12 @@
 package ru.practicum.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.comment.CommentDto;
 import ru.practicum.dto.comment.NewCommentDto;
@@ -11,6 +14,7 @@ import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.dto.event.NewEventDto;
 import ru.practicum.dto.event.UpdateEventRequest;
+import ru.practicum.dto.request.EventRequestStatusUpdateRequest;
 import ru.practicum.dto.request.EventRequestStatusUpdateResult;
 import ru.practicum.dto.request.ParticipationRequestDto;
 import ru.practicum.exception.ValidationException;
@@ -26,6 +30,7 @@ import java.util.Map;
 @RequestMapping("/users/{userId}")
 @RequiredArgsConstructor
 @Slf4j
+@Validated
 public class PrivateController {
 
     private final EventService eventService;
@@ -34,8 +39,8 @@ public class PrivateController {
 
     @GetMapping("/events")
     public List<EventShortDto> getUserEvents(@PathVariable Long userId,
-                                             @RequestParam(defaultValue = Constants.DEFAULT_PAGE_FROM) Integer from,
-                                             @RequestParam(defaultValue = Constants.DEFAULT_PAGE_SIZE) Integer size) {
+                                             @RequestParam(defaultValue = Constants.DEFAULT_PAGE_FROM) @Min(0) Integer from,
+                                             @RequestParam(defaultValue = Constants.DEFAULT_PAGE_SIZE) @Positive Integer size) {
         log.info("GET /users/{}/events - получение событий пользователя", userId);
         return eventService.getUserEvents(userId, from, size);
     }
@@ -94,24 +99,11 @@ public class PrivateController {
     @PatchMapping("/events/{eventId}/requests")
     public EventRequestStatusUpdateResult updateRequestStatuses(@PathVariable Long userId,
                                                                 @PathVariable Long eventId,
-                                                                @RequestBody Map<String, Object> updates) {
+                                                                @Valid @RequestBody EventRequestStatusUpdateRequest request) {
         log.info("PATCH /users/{}/events/{}/requests - обновление статусов запросов", userId, eventId);
 
-        @SuppressWarnings("unchecked")
-        List<Long> requestIds = (List<Long>) updates.get("requestIds");
-        String status = (String) updates.get("status");
-
-        if (requestIds == null || requestIds.isEmpty()) {
-            throw new ValidationException("Список ID заявок не может быть пустым");
-        }
-
-        if (status == null || status.isBlank()) {
-            throw new ValidationException("Статус не может быть пустым");
-        }
-
-        return requestService.updateRequestStatuses(userId, eventId, requestIds, status);
+        return requestService.updateRequestStatuses(userId, eventId, request.getRequestIds(), request.getStatus());
     }
-
 
     @PostMapping("/events/{eventId}/comments")
     @ResponseStatus(HttpStatus.CREATED)
@@ -140,8 +132,8 @@ public class PrivateController {
 
     @GetMapping("/comments")
     public List<CommentDto> getUserComments(@PathVariable Long userId,
-                                            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_FROM) Integer from,
-                                            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_SIZE) Integer size) {
+                                            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_FROM) @Min(0) Integer from,
+                                            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_SIZE) @Positive Integer size) {
         log.info("GET /users/{}/comments - получение комментариев пользователя", userId);
         return commentService.getUserComments(userId, from, size);
     }

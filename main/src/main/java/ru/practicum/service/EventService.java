@@ -1,5 +1,7 @@
 package ru.practicum.service;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.dto.event.NewEventDto;
@@ -16,16 +18,18 @@ public interface EventService {
 
     EventFullDto updateEventByAdmin(Long eventId, UpdateEventRequest updateEvent);
 
-    List<EventShortDto> getUserEvents(Long userId, Integer from, Integer size);
+    List<EventShortDto> getUserEvents(Long userId, @Min(0) Integer from, @Positive Integer size);
 
     EventFullDto getUserEventById(Long userId, Long eventId);
 
     List<EventFullDto> getEventsByAdmin(List<Long> users, List<String> states, List<Long> categories,
-                                        LocalDateTime rangeStart, LocalDateTime rangeEnd, Integer from, Integer size);
+                                        LocalDateTime rangeStart, LocalDateTime rangeEnd,
+                                        @Min(0) Integer from, @Positive Integer size);
 
     List<EventShortDto> getEventsByPublic(String text, List<Long> categories, Boolean paid,
                                           LocalDateTime rangeStart, LocalDateTime rangeEnd,
-                                          Boolean onlyAvailable, String sort, Integer from, Integer size);
+                                          Boolean onlyAvailable, String sort,
+                                          @Min(0) Integer from, @Positive Integer size);
 
     EventFullDto getEventByPublic(Long eventId);
 }

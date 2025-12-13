@@ -131,7 +131,9 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     @Transactional
-    public EventRequestStatusUpdateResult updateRequestStatuses(Long userId, Long eventId, List<Long> requestIds, String status) {
+    public EventRequestStatusUpdateResult updateRequestStatuses(Long userId, Long eventId,
+                                                                List<Long> requestIds,
+                                                                ParticipationRequest.RequestStatus status) {
         log.info("Updating request statuses for event id: {} by user id: {}", eventId, userId);
 
         Event event = eventRepository.findById(eventId)
@@ -145,14 +147,7 @@ public class RequestServiceImpl implements RequestService {
             throw new ConflictException("Подтверждение заявок не требуется");
         }
 
-        RequestStatus newStatus;
-        try {
-            newStatus = RequestStatus.valueOf(status);
-        } catch (IllegalArgumentException e) {
-            throw new ValidationException("Неверный статус: " + status);
-        }
-
-        if (newStatus != RequestStatus.CONFIRMED && newStatus != RequestStatus.REJECTED) {
+        if (status != RequestStatus.CONFIRMED && status != RequestStatus.REJECTED) {
             throw new ValidationException("Можно установить только статусы CONFIRMED или REJECTED");
         }
 
@@ -179,7 +174,7 @@ public class RequestServiceImpl implements RequestService {
         List<ParticipationRequest> rejected = new ArrayList<>();
 
         for (ParticipationRequest request : requests) {
-            if (newStatus == RequestStatus.CONFIRMED) {
+            if (status == RequestStatus.CONFIRMED) {
                 if (limit != 0 && confirmedRequests >= limit) {
                     throw new ConflictException("Достигнут лимит по заявкам на данное событие");
                 }
@@ -189,7 +184,7 @@ public class RequestServiceImpl implements RequestService {
 
                 event.setConfirmedRequests(confirmedRequests);
                 eventRepository.save(event);
-            } else if (newStatus == RequestStatus.REJECTED) {
+            } else if (status == RequestStatus.REJECTED) {
                 request.setStatus(RequestStatus.REJECTED);
                 rejected.add(request);
             }

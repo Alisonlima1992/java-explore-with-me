@@ -1,10 +1,13 @@
 package ru.practicum.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.category.NewCategoryDto;
@@ -27,6 +30,7 @@ import java.util.List;
 @RequestMapping("/admin")
 @RequiredArgsConstructor
 @Slf4j
+@Validated
 public class AdminController {
 
     private final UserService userService;
@@ -44,8 +48,8 @@ public class AdminController {
     @GetMapping("/users")
     public List<UserDto> getUsers(
             @RequestParam(required = false) List<Long> ids,
-            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_FROM) Integer from,
-            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_SIZE) Integer size) {
+            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_FROM) @Min(0) Integer from,
+            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_SIZE) @Positive Integer size) {
         log.info("GET /admin/users - получение пользователей");
         return userService.getUsers(ids, from, size);
     }
@@ -85,8 +89,8 @@ public class AdminController {
             @RequestParam(required = false) List<Long> categories,
             @RequestParam(required = false) @DateTimeFormat(pattern = Constants.DATE_TIME_FORMAT) LocalDateTime rangeStart,
             @RequestParam(required = false) @DateTimeFormat(pattern = Constants.DATE_TIME_FORMAT) LocalDateTime rangeEnd,
-            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_FROM) Integer from,
-            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_SIZE) Integer size) {
+            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_FROM) @Min(0) Integer from,
+            @RequestParam(defaultValue = Constants.DEFAULT_PAGE_SIZE) @Positive Integer size) {
         log.info("GET /admin/events - получение событий");
         return eventService.getEventsByAdmin(users, states, categories, rangeStart, rangeEnd, from, size);
     }
